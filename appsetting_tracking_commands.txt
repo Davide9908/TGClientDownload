@@ -1,0 +1,5 @@
+remove track of existing file
+git update-index --skip-worktree [complete file path]
+
+restore track of existing file 
+git update-index --no-skip-worktree [complete file path]

@@ -10,8 +10,6 @@
 *.userosscache
 *.sln.docstates
 
-appsettings.Development.json
-appsettings.json
 TGClientDownload/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
