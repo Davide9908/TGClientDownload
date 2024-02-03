@@ -3,14 +3,18 @@ namespace TGClientDownloadWorkerService.Configuration
 {
     public class AppSettings
     {
-        public AuthenticationSettings? AuthenticationSettings { get; set; }
+        public TGAuthenticationSettings AuthenticationSettings { get; set; }
         public string? AppVersion { get; set; }
         public string? Url { get; set; }
     }
 
-    public class AuthenticationSettings
+    public class TGAuthenticationSettings
     {
-        public string? Key { get; set; }
+        public string? ApiId { get; set; }
+        public string? ApiHash { get; set; }
+        public string? SessionPath { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Password { get; set; }
     }
 
     public class Authentication

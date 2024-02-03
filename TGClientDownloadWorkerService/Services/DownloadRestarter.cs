@@ -1,7 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using TGClientDownloadDAL;
 using TGClientDownloadWorkerService.Configuration;
 
-namespace TGClientDownloadWorkerService
+namespace TGClientDownloadWorkerService.Services
 {
     public class DownloadRestarter : BackgroundService
     {
@@ -19,20 +20,27 @@ namespace TGClientDownloadWorkerService
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>();
+                if (dbContext.Database.GetPendingMigrations().Any())
+                {
+                    dbContext.Database.Migrate();
+                }
+            }
             while (!stoppingToken.IsCancellationRequested)
             {
                 using var scope = _serviceProvider.CreateScope();
-                var dbContext = scope.ServiceProvider.GetService<TGDownDBContext>();
+                var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>();
                 var thisTask = dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == nameof(DownloadRestarter));
 
                 int delay = thisTask?.Interval ?? 5000;
 
                 if (thisTask == null || !thisTask.Enabled)
                 {
-                    await Task.Delay(delay, stoppingToken);
+                    await Task.Delay(10000, stoppingToken);
                     continue;
                 }
-
                 var t = dbContext.TgChannels.FirstOrDefault();
                 if (t is null)
                 {
