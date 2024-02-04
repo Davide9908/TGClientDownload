@@ -21,7 +21,6 @@ namespace TGClientDownloadDAL
         {
             if (Configuration != null)
             {
-                Console.WriteLine("sono qua");
                 options.UseNpgsql(Configuration.GetConnectionString("TgDownDB"));
                 return;
             }
@@ -33,8 +32,17 @@ namespace TGClientDownloadDAL
 
             options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"));
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<TelegramFile>()
+                .HasIndex(p => new { p.FileId, p.AccessHash })
+                .IsUnique(true);
 
-        public virtual DbSet<TgChannel> TgChannels { get; set; }
+            modelBuilder.Entity<TelegramChat>()
+                .HasIndex(p => new { p.ChatId, p.AccessHash })
+                .IsUnique(true);
+        }
+        public virtual DbSet<TelegramChannel> TgChannels { get; set; }
         public virtual DbSet<ScheduledTask> ScheduledTasks { get; set; }
     }
 }
