@@ -62,13 +62,10 @@ namespace TGClientDownloadWorkerService.Logger
             // Store record.
             var date = DateTime.UtcNow;
             using (var scope = _serviceProvider.CreateScope())
+            using (var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>())
             {
-                var dbContext = scope.ServiceProvider
-                        .GetRequiredService<TGDownDBContext>();
-
                 dbContext.Database.ExecuteSqlRaw("INSERT INTO system_log (\"LogEntryDatetime\", \"Level\", \"Message\", \"Exception\", \"StackTrace\", \"ClassName\") VALUES ({0},{1},{2},{3},{4},{5})",
                                             date, logLevel.ToString(), state?.ToString(), exception?.Message, exception?.StackTrace, _category);
-                dbContext.Dispose();
             }
         }
     }

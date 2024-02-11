@@ -6,13 +6,13 @@ namespace TGClientDownloadWorkerService.Services
 {
     public abstract class ScheduledTaskService : BackgroundService
     {
-        private readonly ILogger<ScheduledTaskService> _internalLogger;
+        private readonly ILogger<ScheduledTaskService> _log;
         private readonly IServiceProvider _serviceProvider;
         private readonly AppSettings _configuration = new AppSettings();
 
         public ScheduledTaskService(ILogger<ScheduledTaskService> logger, IServiceProvider serviceProvider, IConfiguration configuration)
         {
-            _internalLogger = logger;
+            _log = logger;
             _serviceProvider = serviceProvider;
             _configuration = new AppSettings();
             configuration.GetRequiredSection("AppSettings").Bind(_configuration);
@@ -20,7 +20,7 @@ namespace TGClientDownloadWorkerService.Services
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _internalLogger.Info($"Starting {GetType().Name} Task");
+            _log.Info($"Starting {GetType().Name} Task");
 
             //using (var scope = _serviceProvider.CreateScope())
             //{
@@ -32,10 +32,10 @@ namespace TGClientDownloadWorkerService.Services
             //}
             while (!cancellationToken.IsCancellationRequested)
             {
-                using (var scope = _serviceProvider.CreateScope())
-                {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>();
 
+                using (var scope = _serviceProvider.CreateScope())
+                using (var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>())
+                {
                     var thisTask = dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
 
                     int delay = thisTask?.Interval ?? 5000;
@@ -49,10 +49,9 @@ namespace TGClientDownloadWorkerService.Services
                     Run(dbContext, _serviceProvider, cancellationToken);
 
                     await Task.Delay(delay, cancellationToken);
-
-                    dbContext.Dispose();
                 }
             }
+            _log.Info($"{GetType().Name} has been stopped");
 
 
         }
