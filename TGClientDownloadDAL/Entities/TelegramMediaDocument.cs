@@ -7,11 +7,7 @@ namespace TGClientDownloadDAL.Entities
     public class TelegramMediaDocument : TelegramFile
     {
         [ForeignKey(nameof(SourceChat))]
-        public long SourceChatId { get; set; }
-
-        [ForeignKey(nameof(SourceChat))]
-        public long SourceAccessHash { get; set; }
-
+        public int SourceChatId { get; set; }
         public TelegramChat SourceChat { get; set; }
 
 

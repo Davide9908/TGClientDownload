@@ -9,10 +9,10 @@ namespace TGClientDownloadDAL
     {
         protected readonly IConfiguration Configuration;
 
-        public TGDownDBContext(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
+        //public TGDownDBContext(IConfiguration configuration)
+        //{
+        //    Configuration = configuration;
+        //}
         public TGDownDBContext()
         {
 
@@ -42,7 +42,18 @@ namespace TGClientDownloadDAL
                 .HasIndex(p => new { p.ChatId, p.AccessHash })
                 .IsUnique(true);
         }
+
+        public void Migrate()
+        {
+            if (Database.GetPendingMigrations().Any())
+            {
+                Database.Migrate();
+            }
+        }
         public virtual DbSet<TelegramChannel> TgChannels { get; set; }
+        public virtual DbSet<TelegramChat> TelegramChats { get; set; }
+        public virtual DbSet<TelegramFile> TelegramFiles { get; set; }
+        public virtual DbSet<TelegramMediaDocument> TelegramMediaDocuments { get; set; }
         public virtual DbSet<ScheduledTask> ScheduledTasks { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TGClientDownloadDAL;
@@ -11,9 +12,11 @@ using TGClientDownloadDAL;
 namespace TGClientDownloadDAL.Migrations
 {
     [DbContext(typeof(TGDownDBContext))]
-    partial class TGDownDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240209202053_TelegramBaseTables")]
+    partial class TelegramBaseTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,12 +38,6 @@ namespace TGClientDownloadDAL.Migrations
 
                     b.Property<int>("Interval")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("LastFinish")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("LastStart")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TasksName")
                         .IsRequired()

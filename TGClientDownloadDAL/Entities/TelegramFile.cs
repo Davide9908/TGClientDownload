@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TGClientDownloadDAL.Entities
 {
     [Table(nameof(TelegramFile))]
-
     public abstract class TelegramFile
     {
         [Key]

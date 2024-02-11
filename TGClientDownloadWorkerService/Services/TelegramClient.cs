@@ -1,5 +1,7 @@
-﻿using TGClientDownloadDAL;
+﻿using System.Collections.Concurrent;
+using TGClientDownloadDAL;
 using TGClientDownloadWorkerService.Configuration;
+using TGClientDownloadWorkerService.Extensions;
 using TL;
 using WTelegram;
 
@@ -7,20 +9,22 @@ namespace TGClientDownloadWorkerService.Services
 {
     public class TelegramClient
     {
-        private readonly ILogger _log;
+        private readonly ILogger<TelegramClient> _log;
         private readonly IServiceProvider _serviceProvider;
         private TGDownDBContext _dbContext;
         private IServiceScope _serviceScope;
         private Client _tgClient;
-        private static AppSettings _configuration;
+        private static AppSettings _configuration = new AppSettings();
 
         private SemaphoreSlim _semaphoreConnect;
         private SemaphoreSlim _semaphoreDisconnect;
         private CancellationToken? _token;
 
+        public ConcurrentQueue<ChannelFileUpdate> _channelFileUpdates;
 
 
-        public TelegramClient(ILogger log, IServiceProvider serviceProvider, IConfigurationManager configuration)
+
+        public TelegramClient(ILogger<TelegramClient> log, IServiceProvider serviceProvider, IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
             _log = log;
@@ -31,6 +35,7 @@ namespace TGClientDownloadWorkerService.Services
             _semaphoreDisconnect = new SemaphoreSlim(1);
             _token = null;
             _tgClient = new Client(ClientConfig);
+            _channelFileUpdates = new ConcurrentQueue<ChannelFileUpdate>();
         }
 
         public CancellationToken? CancellationToken
@@ -41,7 +46,7 @@ namespace TGClientDownloadWorkerService.Services
             }
             set
             {
-                if (_token == null)
+                if (_token is null)
                 {
                     _token = value;
                 }
@@ -123,15 +128,67 @@ namespace TGClientDownloadWorkerService.Services
             int percentage = Convert.ToInt32(Math.Round(percentageUnround));
             Console.WriteLine($"ID: {id}{Environment.NewLine}Percentage: {percentage}% - {transmitted}/{transmitted}");
         }
+        private async void ReadChannelHistory(Channel channel, int messageId)
+        {
+            int time = Random.Shared.Next(2000, 10000);
+            await Task.Delay(time);
+            await _tgClient.Channels_ReadHistory(channel, messageId);
+        }
+        private async Task Client_OnUpdate(UpdatesBase updates)
+        {
+            Dictionary<long, User> users = new Dictionary<long, User>();
+            Dictionary<long, ChatBase> chats = new Dictionary<long, ChatBase>();
+            updates.CollectUsersChats(users, chats);
+            if (updates is UpdateShortMessage usm && !users.ContainsKey(usm.user_id))
+                (await _tgClient.Updates_GetDifference(usm.pts - usm.pts_count, usm.date, 0)).CollectUsersChats(users, chats);
+            else if (updates is UpdateShortChatMessage uscm && (!users.ContainsKey(uscm.from_id) || !chats.ContainsKey(uscm.chat_id)))
+                (await _tgClient.Updates_GetDifference(uscm.pts - uscm.pts_count, uscm.date, 0)).CollectUsersChats(users, chats);
+            foreach (var update in updates.UpdateList)
+            {
+                switch (update)
+                {
+                    case UpdateNewChannelMessage ncm:
+                        chats.TryGetValue(ncm.message.Peer.ID, out var chat);
+
+                        var message = ((Message)ncm.message);
+                        Channel channel = (Channel)chat;
+
+                        var channelUpdate = new ChannelFileUpdate();
+                        channelUpdate.Channel = channel;
+                        channelUpdate.Message = message;
+
+                        _channelFileUpdates.Enqueue(channelUpdate);
+
+                        _log.Info($"Update from channel {channel.Title}, id {channel.ID}, hash {channel.access_hash} with message {message.message}");
+
+                        ReadChannelHistory(channel, message.ID);
+
+                        break;
+                    //case UpdateNewMessage unm: await HandleMessage(unm.message); break;
+                    //case UpdateEditMessage uem: await HandleMessage(uem.message, true); break;
+                    //// Note: UpdateNewChannelMessage and UpdateEditChannelMessage are also handled by above cases
+                    //case UpdateDeleteChannelMessages udcm: Console.WriteLine($"{udcm.messages.Length} message(s) deleted in {Chat(udcm.channel_id)}"); break;
+                    //case UpdateDeleteMessages udm: Console.WriteLine($"{udm.messages.Length} message(s) deleted"); break;
+                    //case UpdateUserTyping uut: Console.WriteLine($"{User(uut.user_id)} is {uut.action}"); break;
+                    //case UpdateChatUserTyping ucut: Console.WriteLine($"{Peer(ucut.from_id)} is {ucut.action} in {Chat(ucut.chat_id)}"); break;
+                    //case UpdateChannelUserTyping ucut2: Console.WriteLine($"{Peer(ucut2.from_id)} is {ucut2.action} in {Chat(ucut2.channel_id)}"); break;
+                    //case UpdateChatParticipants { participants: ChatParticipants cp }: Console.WriteLine($"{cp.participants.Length} participants in {Chat(cp.chat_id)}"); break;
+                    //case UpdateUserStatus uus: Console.WriteLine($"{User(uus.user_id)} is now {uus.status.GetType().Name[10..]}"); break;
+                    //case UpdateUserName uun: Console.WriteLine($"{User(uun.user_id)} has changed profile name: {uun.first_name} {uun.last_name}"); break;
+                    //case UpdateUser uu: Console.WriteLine($"{User(uu.user_id)} has changed infos/photo"); break;
+                    default: Console.WriteLine(update.GetType().Name); break; // there are much more update types than the above example cases
+                }
+            }
+        }
         private async Task Client_OnOther(IObject arg)
         {
             if (arg is ReactorError err)
             {
                 // typically: network connection was totally lost
-                _log.LogError(err.Exception, "Fatal reactor error");
+                _log.Error("Fatal reactor error", err.Exception);
                 while (true)
                 {
-                    _log.LogError("Disposing the client and trying to reconnect in 5 seconds...");
+                    _log.Error("Disposing the client and trying to reconnect in 5 seconds...");
                     _tgClient.Dispose();
                     await Task.Delay(5000);
                     try
@@ -141,13 +198,13 @@ namespace TGClientDownloadWorkerService.Services
                     }
                     catch (Exception ex)
                     {
-                        _log.LogError(ex, "Connection still failing");
+                        _log.Error("Connection still failing", ex);
                     }
                 }
             }
             else
             {
-                _log.LogError($"Client_OnOther: Other - {arg.GetType().Name}");
+                _log.Error($"Client_OnOther: Other - {arg.GetType().Name}");
             }
         }
         public void StopClient()
@@ -175,5 +232,10 @@ namespace TGClientDownloadWorkerService.Services
                 default: return null;                  // let WTelegramClient decide the default config
             }
         }
+    }
+    public struct ChannelFileUpdate
+    {
+        public Channel Channel { get; set; }
+        public Message Message { get; set; }
     }
 }
