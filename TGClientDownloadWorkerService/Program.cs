@@ -14,20 +14,16 @@ namespace TGClientDownloadWorkerService
             CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-US");
             Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-US");
             Console.OutputEncoding = Encoding.UTF8;
-            //using (var db = new TGDownDBContext())
-            //{
-            //    db.Migrate();
-            //}
+
             var builder = Host.CreateDefaultBuilder(args);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 builder = builder.UseSystemd();
             }
-            builder.ConfigureAppConfiguration(builder =>
+            var host = builder.ConfigureAppConfiguration(builder =>
             {
                 builder.AddJsonFile("appsettings.json");
             })
-
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<TgDownloadManagerTask>();
@@ -38,9 +34,25 @@ namespace TGClientDownloadWorkerService
             {
                 builder.AddDbLogger();
             })
-            .Build()
-            .Run();
+            .Build();
+            using (var scope = host.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+
+                try
+                {
+                    var context = services.GetService<TGDownDBContext>();
+                    context.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.Error("An error occurred applying migrations", ex);
+                }
+            }
+            host.Run();
         }
+
 
     }
 }

@@ -30,7 +30,8 @@ namespace TGClientDownloadDAL
             .AddJsonFile("appsettings.json")
             .Build();
 
-            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"));
+
+            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"), x => x.MigrationsAssembly("TGClientDownloadDAL"));
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,6 +51,7 @@ namespace TGClientDownloadDAL
                 Database.Migrate();
             }
         }
+
         public virtual DbSet<TelegramChannel> TgChannels { get; set; }
         public virtual DbSet<TelegramChat> TelegramChats { get; set; }
         public virtual DbSet<TelegramFile> TelegramFiles { get; set; }
