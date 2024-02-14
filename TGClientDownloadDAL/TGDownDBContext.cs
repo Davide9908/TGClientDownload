@@ -9,10 +9,10 @@ namespace TGClientDownloadDAL
     {
         protected readonly IConfiguration Configuration;
 
-        //public TGDownDBContext(IConfiguration configuration)
-        //{
-        //    Configuration = configuration;
-        //}
+        public TGDownDBContext(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
         public TGDownDBContext()
         {
 
@@ -21,7 +21,7 @@ namespace TGClientDownloadDAL
         {
             if (Configuration != null)
             {
-                options.UseNpgsql(Configuration.GetConnectionString("TgDownDB"));
+                options.UseNpgsql(Configuration.GetConnectionString("TgDownDB"), x => x.MigrationsAssembly(Assembly.GetExecutingAssembly().GetName().Name));
                 return;
             }
 
@@ -30,8 +30,7 @@ namespace TGClientDownloadDAL
             .AddJsonFile("appsettings.json")
             .Build();
 
-
-            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"), x => x.MigrationsAssembly("TGClientDownloadDAL"));
+            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"), x => x.MigrationsAssembly(Assembly.GetExecutingAssembly().GetName().Name));
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
