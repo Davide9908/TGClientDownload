@@ -29,6 +29,7 @@ namespace TGClientDownloadWorkerService
                 services.AddHostedService<TgDownloadManagerTask>();
                 services.AddSingleton<TelegramClient>();
                 services.AddDbContext<TGDownDBContext>();
+                services.AddScoped<ConfigParameterService>();
             })
             .ConfigureLogging(builder =>
             {

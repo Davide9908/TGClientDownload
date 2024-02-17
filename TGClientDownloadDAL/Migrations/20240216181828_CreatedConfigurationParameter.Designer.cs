@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TGClientDownloadDAL;
@@ -11,9 +12,11 @@ using TGClientDownloadDAL;
 namespace TGClientDownloadDAL.Migrations
 {
     [DbContext(typeof(TGDownDBContext))]
-    partial class TGDownDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240216181828_CreatedConfigurationParameter")]
+    partial class CreatedConfigurationParameter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -119,13 +122,7 @@ namespace TGClientDownloadDAL.Migrations
                     b.Property<long>("FileId")
                         .HasColumnType("bigint");
 
-                    b.Property<int>("TelegramMessageId")
-                        .HasColumnType("integer");
-
                     b.HasKey("TelegramFileId");
-
-                    b.HasIndex("TelegramMessageId")
-                        .IsUnique();
 
                     b.HasIndex("FileId", "AccessHash")
                         .IsUnique();
@@ -133,22 +130,6 @@ namespace TGClientDownloadDAL.Migrations
                     b.ToTable("TelegramFile");
 
                     b.UseTptMappingStrategy();
-                });
-
-            modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramMessage", b =>
-                {
-                    b.Property<int>("TelegramMessageId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TelegramMessageId"));
-
-                    b.Property<int>("MessageId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("TelegramMessageId");
-
-                    b.ToTable("TelegramMessage");
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramChannel", b =>
@@ -200,17 +181,6 @@ namespace TGClientDownloadDAL.Migrations
                     b.ToTable("TelegramMediaDocument");
                 });
 
-            modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramFile", b =>
-                {
-                    b.HasOne("TGClientDownloadDAL.Entities.TelegramMessage", "TelegramMessage")
-                        .WithOne("Document")
-                        .HasForeignKey("TGClientDownloadDAL.Entities.TelegramFile", "TelegramMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TelegramMessage");
-                });
-
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramChannel", b =>
                 {
                     b.HasOne("TGClientDownloadDAL.Entities.TelegramChat", null)
@@ -235,11 +205,6 @@ namespace TGClientDownloadDAL.Migrations
                         .IsRequired();
 
                     b.Navigation("SourceChat");
-                });
-
-            modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramMessage", b =>
-                {
-                    b.Navigation("Document");
                 });
 #pragma warning restore 612, 618
         }

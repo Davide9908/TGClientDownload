@@ -1,5 +1,4 @@
 using TGClientDownloadDAL;
-using TGClientDownloadWorkerService.Configuration;
 using TGClientDownloadWorkerService.Extensions;
 
 namespace TGClientDownloadWorkerService.Services
@@ -8,53 +7,63 @@ namespace TGClientDownloadWorkerService.Services
     {
         private readonly ILogger<ScheduledTaskService> _log;
         private readonly IServiceProvider _serviceProvider;
-        private readonly AppSettings _configuration = new AppSettings();
+        protected IServiceScope _serviceScope;
+        protected TGDownDBContext _dbContext;
 
-        public ScheduledTaskService(ILogger<ScheduledTaskService> logger, IServiceProvider serviceProvider, IConfiguration configuration)
+        public ScheduledTaskService(ILogger<ScheduledTaskService> logger, IServiceProvider serviceProvider)
         {
             _log = logger;
             _serviceProvider = serviceProvider;
-            _configuration = new AppSettings();
-            configuration.GetRequiredSection("AppSettings").Bind(_configuration);
+        }
+        public override Task StartAsync(CancellationToken cancellationToken)
+        {
+            _serviceScope = _serviceProvider.CreateScope();
+            _dbContext = _serviceScope.ServiceProvider.GetRequiredService<TGDownDBContext>();
+            Setup(_dbContext);
+            return base.StartAsync(cancellationToken);
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            Cleanup();
+            return base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _log.Info($"Starting {GetType().Name} Task");
 
-            //using (var scope = _serviceProvider.CreateScope())
-            //{
-            //    var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>();
-            //    if (dbContext.Database.GetPendingMigrations().Any())
-            //    {
-            //        dbContext.Database.Migrate();
-            //    }
-            //}
             while (!cancellationToken.IsCancellationRequested)
             {
+                var thisTask = _dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
 
-                using (var scope = _serviceProvider.CreateScope())
-                using (var dbContext = scope.ServiceProvider.GetRequiredService<TGDownDBContext>())
+                int delay = thisTask?.Interval ?? 5000;
+
+                if (thisTask == null || !thisTask.Enabled)
                 {
-                    var thisTask = dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
-
-                    int delay = thisTask?.Interval ?? 5000;
-
-                    if (thisTask == null || !thisTask.Enabled)
-                    {
-                        await Task.Delay(10000, cancellationToken);
-                        continue;
-                    }
-
-                    Run(dbContext, _serviceProvider, cancellationToken);
-
-                    await Task.Delay(delay, cancellationToken);
+                    await Task.Delay(10000, cancellationToken);
+                    continue;
                 }
+                thisTask.LastStart = DateTime.Now;
+                thisTask.IsRunning = true;
+                _dbContext.SaveChanges();
+
+                await Run(cancellationToken);
+
+                thisTask.LastFinish = DateTime.Now;
+                thisTask.IsRunning = false;
+                _dbContext.SaveChanges();
+
+                await Task.Delay(delay, cancellationToken);
             }
             _log.Info($"{GetType().Name} has been stopped");
 
-
         }
-        public abstract void Run(TGDownDBContext _dbContext, IServiceProvider _serviceProvider, CancellationToken cancellationToken);
+
+        public abstract Task Run(CancellationToken cancellationToken);
+
+        public abstract void Setup(TGDownDBContext _dbContext);
+
+        public abstract void Cleanup();
     }
 }

@@ -12,6 +12,7 @@ namespace TGClientDownloadDAL.Entities
         public DateTime LastFinish { get; set; }
         public bool Enabled { get; set; }
         public int Interval { get; set; }
+        public bool IsRunning { get; set; }
 
         public ScheduledTask()
         {

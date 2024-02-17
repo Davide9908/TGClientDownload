@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using TGClientDownloadDAL.SupportClasses;
 
 namespace TGClientDownloadDAL.Entities
@@ -9,7 +10,6 @@ namespace TGClientDownloadDAL.Entities
         [ForeignKey(nameof(SourceChat))]
         public int SourceChatId { get; set; }
         public TelegramChat SourceChat { get; set; }
-
 
         public string FileName { get; set; }
 
@@ -23,7 +23,12 @@ namespace TGClientDownloadDAL.Entities
 
         public DownloadErrorType? ErrorType { get; set; }
 
-        public TelegramMediaDocument() { }
+        public TelegramMediaDocument()
+        {
+            DataTransmitted = 0;
+            LastUpdate = DateTime.Now;
+            ErrorType = null;
+        }
 
     }
 

@@ -30,7 +30,7 @@ namespace TGClientDownloadDAL
             .AddJsonFile("appsettings.json")
             .Build();
 
-            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"), x => x.MigrationsAssembly(Assembly.GetExecutingAssembly().GetName().Name));
+            options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"));
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +41,16 @@ namespace TGClientDownloadDAL
             modelBuilder.Entity<TelegramChat>()
                 .HasIndex(p => new { p.ChatId, p.AccessHash })
                 .IsUnique(true);
+
+            modelBuilder.Entity<ConfigurationParameter>()
+                .HasIndex(p => new { p.ParameterName })
+            .IsUnique(true);
+
+            modelBuilder.Entity<TelegramFile>(entity =>
+            {
+                entity.HasKey(z => z.TelegramFileId);
+                entity.HasOne(p => p.TelegramMessage);
+            });
         }
 
         public void Migrate()
@@ -51,10 +61,13 @@ namespace TGClientDownloadDAL
             }
         }
 
-        public virtual DbSet<TelegramChannel> TgChannels { get; set; }
+        public virtual DbSet<TelegramChannel> TelegramChannels { get; set; }
         public virtual DbSet<TelegramChat> TelegramChats { get; set; }
         public virtual DbSet<TelegramFile> TelegramFiles { get; set; }
         public virtual DbSet<TelegramMediaDocument> TelegramMediaDocuments { get; set; }
+        public virtual DbSet<TelegramMessage> TelegramMessages { get; set; }
         public virtual DbSet<ScheduledTask> ScheduledTasks { get; set; }
+        public virtual DbSet<ConfigurationParameter> ConfigurationParameters { get; set; }
+
     }
 }

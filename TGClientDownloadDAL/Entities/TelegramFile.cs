@@ -12,5 +12,9 @@ namespace TGClientDownloadDAL.Entities
         public long FileId { get; set; }
 
         public long AccessHash { get; set; }
+
+        [ForeignKey(nameof(TelegramMessage))]
+        public int TelegramMessageId { get; set; }
+        public TelegramMessage TelegramMessage { get; set; }
     }
 }
