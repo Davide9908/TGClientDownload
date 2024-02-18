@@ -3,7 +3,7 @@ namespace TGClientDownloadWorkerService.Configuration
 {
     public class AppSettings
     {
-        public TGAuthenticationSettings AuthenticationSettings { get; set; }
+        //public TGAuthenticationSettings AuthenticationSettings { get; set; }
         public string? AppVersion { get; set; }
         public string? Url { get; set; }
     }

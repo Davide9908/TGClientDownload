@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using TGClientDownloadDAL;
+using TGClientDownloadWorkerService.Configuration;
 using TGClientDownloadWorkerService.Extensions;
 using TGClientDownloadWorkerService.Services;
 
@@ -39,15 +41,22 @@ namespace TGClientDownloadWorkerService
             using (var scope = host.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-
+                var logger = services.GetRequiredService<ILogger<Program>>();
                 try
                 {
+                    AppSettings settings = new AppSettings();
+                    var config = new ConfigurationBuilder()
+                        .SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
+                        .AddJsonFile("appsettings.json")
+                        .Build();
+                    config.GetRequiredSection("AppSettings").Bind(settings);
+                    logger.Info($"Starting Telegram Download Version {settings?.AppVersion}");
+
                     var context = services.GetService<TGDownDBContext>();
                     context.Migrate();
                 }
                 catch (Exception ex)
                 {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
                     logger.Error("An error occurred applying migrations", ex);
                 }
             }
