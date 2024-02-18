@@ -46,7 +46,7 @@ namespace TGClientDownloadDAL.Migrations
                     b.HasIndex("ParameterName")
                         .IsUnique();
 
-                    b.ToTable("system_ConfigParam");
+                    b.ToTable("system_ConfigParam", (string)null);
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.ScheduledTask", b =>
@@ -78,7 +78,7 @@ namespace TGClientDownloadDAL.Migrations
 
                     b.HasKey("ScheduledTaskId");
 
-                    b.ToTable("ScheduledTask");
+                    b.ToTable("ScheduledTask", (string)null);
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramChat", b =>
@@ -100,7 +100,7 @@ namespace TGClientDownloadDAL.Migrations
                     b.HasIndex("ChatId", "AccessHash")
                         .IsUnique();
 
-                    b.ToTable("TelegramChat");
+                    b.ToTable("TelegramChat", (string)null);
 
                     b.UseTptMappingStrategy();
                 });
@@ -130,7 +130,7 @@ namespace TGClientDownloadDAL.Migrations
                     b.HasIndex("FileId", "AccessHash")
                         .IsUnique();
 
-                    b.ToTable("TelegramFile");
+                    b.ToTable("TelegramFile", (string)null);
 
                     b.UseTptMappingStrategy();
                 });
@@ -148,7 +148,7 @@ namespace TGClientDownloadDAL.Migrations
 
                     b.HasKey("TelegramMessageId");
 
-                    b.ToTable("TelegramMessage");
+                    b.ToTable("TelegramMessage", (string)null);
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramChannel", b =>
@@ -166,7 +166,7 @@ namespace TGClientDownloadDAL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ToTable("TelegramChannel");
+                    b.ToTable("TelegramChannel", (string)null);
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramMediaDocument", b =>
@@ -197,7 +197,7 @@ namespace TGClientDownloadDAL.Migrations
 
                     b.HasIndex("SourceChatId");
 
-                    b.ToTable("TelegramMediaDocument");
+                    b.ToTable("TelegramMediaDocument", (string)null);
                 });
 
             modelBuilder.Entity("TGClientDownloadDAL.Entities.TelegramFile", b =>

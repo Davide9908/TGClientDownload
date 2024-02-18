@@ -16,5 +16,7 @@ namespace TGClientDownloadDAL.Entities
         public long ChatId { get; set; }
 
         public long AccessHash { get; set; }
+
+        public List<TelegramMediaDocument> MediaDocuments { get; set; }
     }
 }

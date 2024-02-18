@@ -5,7 +5,8 @@
         SysReserved = 0,
         Downloading,
         Error,
-        Success
+        Success,
+        Aborted
     }
     public enum DownloadErrorType
     {
