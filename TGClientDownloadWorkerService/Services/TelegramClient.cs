@@ -252,11 +252,13 @@ namespace TGClientDownloadWorkerService.Services
                         channelUpdate.Channel = channel;
                         channelUpdate.Message = message;
 
+                        ReadChannelHistory(channel, message.ID);
+
                         _channelFileUpdates.Enqueue(channelUpdate);
 
                         _log.Info($"Update has been received from channel {channel.Title}, id {channel.ID}, hash {channel.access_hash} with message {message.message}");
 
-                        ReadChannelHistory(channel, message.ID);
+
 
                         break;
                     //case UpdateNewMessage unm: await HandleMessage(unm.message); break;
