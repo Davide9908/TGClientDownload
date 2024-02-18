@@ -329,6 +329,8 @@ namespace TGClientDownloadWorkerService.Services
                 var tempDBFile = tempDBContext.TelegramMediaDocuments.First(x => x.TelegramFileId == dbFile.TelegramFileId);
                 try
                 {
+                    int time = Random.Shared.Next(3000, 11000);
+                    await Task.Delay(time);
                     downloadResult = await _client.DownloadFileAsync(doc, fileStream, (transmitted, totalSize) => { DownloadProgressCallback(transmitted, totalSize, tempDBFile, tempDBContext, cancellationToken); });
                 }
                 catch (Exception ex)
