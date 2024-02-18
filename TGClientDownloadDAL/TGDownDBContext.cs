@@ -27,7 +27,7 @@ namespace TGClientDownloadDAL
 
             var ManualConfiguration = new ConfigurationBuilder()
             .SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
-            .AddJsonFile("appsettings.json")
+            .AddJsonFile("appsettingsDAL.json")
             .Build();
 
             options.UseNpgsql(ManualConfiguration.GetConnectionString("TgDownDB"));

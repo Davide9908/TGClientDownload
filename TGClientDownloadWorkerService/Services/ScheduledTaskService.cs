@@ -17,9 +17,7 @@ namespace TGClientDownloadWorkerService.Services
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            _serviceScope = _serviceProvider.CreateScope();
-            _dbContext = _serviceScope.ServiceProvider.GetRequiredService<TGDownDBContext>();
-            Setup(_dbContext);
+            Setup();
             return base.StartAsync(cancellationToken);
         }
 
@@ -35,26 +33,41 @@ namespace TGClientDownloadWorkerService.Services
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var thisTask = _dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
+                int delay = 5000;
 
-                int delay = thisTask?.Interval ?? 5000;
-
-                if (thisTask == null || !thisTask.Enabled)
+                using (_serviceScope = _serviceProvider.CreateScope())
+                using (_dbContext = _serviceScope.ServiceProvider.GetService<TGDownDBContext>())
                 {
-                    await Task.Delay(10000, cancellationToken);
-                    continue;
+                    var thisTask = _dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
+                    if (thisTask is not null)
+                    {
+                        _log.Debug($"Task found with name {thisTask.TasksName} and status {thisTask.Enabled}");
+                    }
+                    else
+                    {
+                        _log.Debug($"No Task found! {GetType().Name}");
+                    }
+                    delay = thisTask?.Interval ?? 5000;
+
+                    if (thisTask == null || !thisTask.Enabled)
+                    {
+                        await Task.Delay(10000, cancellationToken);
+                        continue;
+                    }
+                    thisTask.LastStart = DateTime.UtcNow;
+                    thisTask.IsRunning = true;
+                    _dbContext.SaveChanges();
+
+                    await Run(cancellationToken);
+
+                    thisTask.LastFinish = DateTime.UtcNow;
+                    thisTask.IsRunning = false;
+                    _dbContext.SaveChanges();
                 }
-                thisTask.LastStart = DateTime.Now;
-                thisTask.IsRunning = true;
-                _dbContext.SaveChanges();
-
-                await Run(cancellationToken);
-
-                thisTask.LastFinish = DateTime.Now;
-                thisTask.IsRunning = false;
-                _dbContext.SaveChanges();
 
                 await Task.Delay(delay, cancellationToken);
+                _dbContext = null;
+                _serviceScope = null;
             }
             _log.Info($"{GetType().Name} has been stopped");
 
@@ -62,7 +75,7 @@ namespace TGClientDownloadWorkerService.Services
 
         public abstract Task Run(CancellationToken cancellationToken);
 
-        public abstract void Setup(TGDownDBContext _dbContext);
+        public abstract void Setup();
 
         public abstract void Cleanup();
     }

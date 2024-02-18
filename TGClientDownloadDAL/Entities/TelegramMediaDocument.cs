@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using TGClientDownloadDAL.SupportClasses;
 
 namespace TGClientDownloadDAL.Entities
@@ -26,7 +25,7 @@ namespace TGClientDownloadDAL.Entities
         public TelegramMediaDocument()
         {
             DataTransmitted = 0;
-            LastUpdate = DateTime.Now;
+            LastUpdate = DateTime.UtcNow;
             ErrorType = null;
         }
 

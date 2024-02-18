@@ -5,28 +5,42 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TGClientDownload", "TGClientDownload\TGClientDownload.csproj", "{115C11A9-60C1-466B-AABD-1648C2DE1A70}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TGClientDownloadWorkerService", "TGClientDownloadWorkerService\TGClientDownloadWorkerService.csproj", "{642E0335-5C80-4536-8E54-CCC8015FEA1C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TGClientDownloadWorkerService", "TGClientDownloadWorkerService\TGClientDownloadWorkerService.csproj", "{642E0335-5C80-4536-8E54-CCC8015FEA1C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TGClientDownloadDAL", "TGClientDownloadDAL\TGClientDownloadDAL.csproj", "{5051460D-764E-489D-BA23-9D4D20DC6602}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TGClientDownloadDAL", "TGClientDownloadDAL\TGClientDownloadDAL.csproj", "{5051460D-764E-489D-BA23-9D4D20DC6602}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Debug|x64.ActiveCfg = Debug|x64
+		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Debug|x64.Build.0 = Debug|x64
 		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Release|x64.ActiveCfg = Release|x64
+		{115C11A9-60C1-466B-AABD-1648C2DE1A70}.Release|x64.Build.0 = Release|x64
 		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Debug|x64.ActiveCfg = Debug|x64
+		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Debug|x64.Build.0 = Debug|x64
 		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Release|x64.ActiveCfg = Release|x64
+		{642E0335-5C80-4536-8E54-CCC8015FEA1C}.Release|x64.Build.0 = Release|x64
 		{5051460D-764E-489D-BA23-9D4D20DC6602}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5051460D-764E-489D-BA23-9D4D20DC6602}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5051460D-764E-489D-BA23-9D4D20DC6602}.Debug|x64.ActiveCfg = Debug|x64
+		{5051460D-764E-489D-BA23-9D4D20DC6602}.Debug|x64.Build.0 = Debug|x64
 		{5051460D-764E-489D-BA23-9D4D20DC6602}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5051460D-764E-489D-BA23-9D4D20DC6602}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5051460D-764E-489D-BA23-9D4D20DC6602}.Release|x64.ActiveCfg = Release|x64
+		{5051460D-764E-489D-BA23-9D4D20DC6602}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

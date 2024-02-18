@@ -60,7 +60,10 @@ namespace TGClientDownloadWorkerService
                     logger.Error("An error occurred applying migrations", ex);
                 }
             }
-            host.Run();
+            if (!args.HasElements() || !args.Contains("--updateDB"))
+            {
+                host.Run();
+            }
         }
 
 

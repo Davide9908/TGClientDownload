@@ -17,6 +17,7 @@ namespace TGClientDownloadWorkerService.Services
         private SemaphoreSlim _semaphoreConnect;
         private SemaphoreSlim _semaphoreDisconnect;
         private CancellationToken? _token;
+        private readonly bool _isDev;
 
         private ConcurrentQueue<ChannelFileUpdate> _channelFileUpdates;
 
@@ -27,8 +28,9 @@ namespace TGClientDownloadWorkerService.Services
             _serviceProvider = serviceProvider;
             _log = log;
             _serviceScope = serviceProvider.CreateScope();
-            ConfigParameterService config = _serviceProvider.GetService<ConfigParameterService>();
+            ConfigParameterService config = _serviceScope.ServiceProvider.GetService<ConfigParameterService>();
             _configuration = config.GetTGAuthenticationSettings();
+            _isDev = _serviceScope.ServiceProvider.GetService<IHostEnvironment>().IsDevelopment();
             _semaphoreConnect = new SemaphoreSlim(1);
             _semaphoreDisconnect = new SemaphoreSlim(1);
             _token = null;
@@ -51,7 +53,7 @@ namespace TGClientDownloadWorkerService.Services
             {
                 case "api_id": return _configuration.ApiId;
                 case "api_hash": return _configuration.ApiHash;
-                case "session_pathname": return _configuration.SessionPath;
+                case "session_pathname": return _isDev ? "G:\\Projects\\TGClientDownload\\TGClientDownload\\bin\\WTelegram.session" : _configuration.SessionPath;
                 case "phone_number": return _configuration.PhoneNumber;
                 //case "verification_code": Console.Write("Code: "); return Console.ReadLine();
                 //case "first_name": return "John";      // if sign-up is required
@@ -75,14 +77,14 @@ namespace TGClientDownloadWorkerService.Services
             }
         }
 
-        public bool IsConnected => !_tgClient.Disconnected;
+        public bool IsConnected => _tgClient.User is not null;
 
         public async Task<User?> Connect()
         {
             User? loggedUser = null;
             //Evito che piu task possano effettuare il login
             await _semaphoreConnect.WaitAsync();
-            if (!_tgClient.Disconnected)
+            if (IsConnected)
             {
                 return _tgClient.User;
             }
@@ -118,7 +120,14 @@ namespace TGClientDownloadWorkerService.Services
                 return;
             }
             _tgClient.Dispose();
-            _log.Info("Telegram client has been disconnected");
+            try
+            {
+                _log.Info("Telegram client has been disconnected");
+            }
+            catch (AggregateException ex)
+            {
+                Console.WriteLine("Telegram client has been disconnected, but seems IServiceProvider has been already disposed", ex);
+            }
             _semaphoreDisconnect.Release();
         }
 
@@ -283,6 +292,9 @@ namespace TGClientDownloadWorkerService.Services
                     try
                     {
                         _tgClient = new Client(ClientConfig);
+                        _tgClient.OnUpdate += Client_OnUpdate;
+                        _tgClient.OnOther += Client_OnOther;
+                        await _tgClient.LoginUserIfNeeded();
                         break;
                     }
                     catch (Exception ex)
@@ -293,7 +305,7 @@ namespace TGClientDownloadWorkerService.Services
             }
             else
             {
-                _log.Error($"Client_OnOther: Other - {arg.GetType().Name}");
+                _log.Warning($"Client_OnOther: Other - {arg.GetType().Name}");
             }
         }
         #endregion

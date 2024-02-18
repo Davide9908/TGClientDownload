@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-TGClientDownloadWorkerService-083a1244-edf1-43de-8ee8-eb8579a091cc</UserSecretsId>
+    <PublishAot>False</PublishAot>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,4 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\TGClientDownloadDAL\TGClientDownloadDAL.csproj" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="appsett" /></VisualStudio></ProjectExtensions>
 </Project>
