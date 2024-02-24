@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
+using TGClientDownloadDAL.Entities;
 using TGClientDownloadWorkerService.Configuration;
 using TGClientDownloadWorkerService.Extensions;
 using TL;
@@ -20,7 +22,7 @@ namespace TGClientDownloadWorkerService.Services
         private readonly bool _isDev;
 
         private ConcurrentQueue<ChannelFileUpdate> _channelFileUpdates;
-
+        StreamWriter WTelegramLogs;
 
 
         public TelegramClient(ILogger<TelegramClient> log, IServiceProvider serviceProvider, IConfiguration configuration)
@@ -30,6 +32,12 @@ namespace TGClientDownloadWorkerService.Services
             _serviceScope = serviceProvider.CreateScope();
             ConfigParameterService config = _serviceScope.ServiceProvider.GetService<ConfigParameterService>();
             _configuration = config.GetTGAuthenticationSettings();
+            string? logPath = config.GetValue(ParameterNames.WTelegramClientLogPath);
+            if (!string.IsNullOrWhiteSpace(logPath))
+            {
+                WTelegramLogs = new StreamWriter(logPath, true, Encoding.UTF8) { AutoFlush = true };
+                Helpers.Log += (lvl, str) => WTelegramLogs.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{"TDIWE!"[lvl]}] {str}");
+            }
             _isDev = _serviceScope.ServiceProvider.GetService<IHostEnvironment>().IsDevelopment();
             _semaphoreConnect = new SemaphoreSlim(1);
             _semaphoreDisconnect = new SemaphoreSlim(1);

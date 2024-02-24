@@ -36,5 +36,6 @@ namespace TGClientDownloadDAL.Entities
         public const string SessionPath = nameof(SessionPath);
         public const string PhoneNumber = nameof(PhoneNumber);
         public const string Password = nameof(Password);
+        public const string WTelegramClientLogPath = nameof(WTelegramClientLogPath);
     }
 }
