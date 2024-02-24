@@ -57,8 +57,14 @@ namespace TGClientDownloadWorkerService.Services
                     thisTask.LastStart = DateTime.UtcNow;
                     thisTask.IsRunning = true;
                     _dbContext.SaveChanges();
-
-                    await Run(cancellationToken);
+                    try
+                    {
+                        await Run(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error($"An error occured executing task {thisTask.TasksName}", ex);
+                    }
 
                     thisTask.LastFinish = DateTime.UtcNow;
                     thisTask.IsRunning = false;
