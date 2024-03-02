@@ -86,11 +86,8 @@ namespace TGClientDownloadWorkerService.Services
                 bool result = fileUpdateQueue.TryDequeue(out ChannelFileUpdate fileUpdate);
                 if (!result) { continue; }
 
-                var enabledChannels = _dbContext.TelegramChannels.Where(c => c.AutoDownloadEnabled).ToList();
-                if (!enabledChannels.HasElements()) { continue; }
-
                 Channel channel = fileUpdate.Channel;
-                TelegramChannel? channelConfig = enabledChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash).FirstOrDefault();
+                TelegramChannel? channelConfig = _dbContext.TelegramChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash).FirstOrDefault();
                 if (channelConfig is null)
                 {
                     _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
@@ -188,6 +185,7 @@ namespace TGClientDownloadWorkerService.Services
 
                 _ = DownloadEpisode(doc, fileStream, telegramMessage, episode, cancellationToken);
             }
+            _log.Debug("Update queue is empty");
         }
 
         private void HandleDownloadInError(CancellationToken cancellationToken)

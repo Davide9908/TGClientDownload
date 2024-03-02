@@ -9,7 +9,7 @@ namespace TGClientDownloadDAL.Entities
 
         public bool AutoDownloadEnabled { get; set; }
 
-        public string FileNameTemplate { get; set; }
+        public string? FileNameTemplate { get; set; }
 
         public ChannelStatus Status { get; set; }
 
@@ -17,7 +17,7 @@ namespace TGClientDownloadDAL.Entities
         {
 
         }
-        public TelegramChannel(long id, long accessHash, string channelName, string fileNameTemplate, bool enableAutoDownload)
+        public TelegramChannel(long id, long accessHash, string channelName, string? fileNameTemplate, bool enableAutoDownload)
         {
             ChatId = id;
             AccessHash = accessHash;
