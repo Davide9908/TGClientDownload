@@ -93,7 +93,15 @@ namespace TGClientDownloadWorkerService.Services
                 TelegramChannel? channelConfig = enabledChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash).FirstOrDefault();
                 if (channelConfig is null)
                 {
-                    _log.Warning($"Channel {channel} was not found in database");
+                    _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
+                    TelegramChannel telegramChannel = new(channel.ID, channel.access_hash, channel.Title, null, false);
+                    _dbContext.TelegramChannels.Add(telegramChannel);
+                    _dbContext.SaveChanges();
+                    continue;
+                }
+                if (!channelConfig.AutoDownloadEnabled || channelConfig.Status != ChannelStatus.Active)
+                {
+                    _log.Warning($"Channel is not active or automatic downloads are disabled");
                     continue;
                 }
 

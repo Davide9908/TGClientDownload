@@ -11,6 +11,8 @@ namespace TGClientDownloadDAL.Entities
 
         public string FileNameTemplate { get; set; }
 
+        public ChannelStatus Status { get; set; }
+
         public TelegramChannel()
         {
 
@@ -22,6 +24,15 @@ namespace TGClientDownloadDAL.Entities
             ChannelName = channelName;
             FileNameTemplate = fileNameTemplate;
             AutoDownloadEnabled = enableAutoDownload;
+            Status = ChannelStatus.ToConfirm;
         }
+    }
+
+    public enum ChannelStatus
+    {
+        SysReserved = 0,
+        ToConfirm,
+        Active,
+        Obsolete
     }
 }
