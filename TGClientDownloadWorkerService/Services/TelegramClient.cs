@@ -163,7 +163,8 @@ namespace TGClientDownloadWorkerService.Services
         {
             int time = Random.Shared.Next(2000, 10000);
             await Task.Delay(time);
-            await _tgClient.Channels_ReadHistory(channel, messageId);
+            
+            await _tgClient.Channels_ReadHistory(new InputChannel(channel.id, channel.access_hash), messageId);
         }
 
         /// <summary>
