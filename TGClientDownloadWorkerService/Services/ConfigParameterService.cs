@@ -29,6 +29,10 @@ namespace TGClientDownloadWorkerService.Services
         {
             return string.IsNullOrWhiteSpace(value) ? defaultValue : (T)TypeDescriptor.GetConverter(typeof(T)).ConvertFromString(value);
         }
+        public ConfigurationParameter? GetConfigurationParameter(string parameterName)
+        {
+            return _dbContext.ConfigurationParameters.FirstOrDefault(p => p.ParameterName == parameterName);
+        }
 
         public TGAuthenticationSettings GetTGAuthenticationSettings()
         {

@@ -60,12 +60,33 @@ namespace TGClientDownloadWorkerService.Services
                 _loginConnectionAttemps = 1;
                 //return; //I will start doing stuff at the next run
             }
-
+            var lastRefreshParam = _configParameterService.GetConfigurationParameter(ParameterNames.LastChatsRefresh);
             if (_startupRetrieve)
             {
                 _startupRetrieve = false;
                 await RetrieveFailedOrIncompleteDownloads();
                 await _client.LoadAllChats();
+                if (lastRefreshParam is null)
+                {
+                    lastRefreshParam = new ConfigurationParameter()
+                    {
+                        ParameterName = ParameterNames.LastChatsRefresh,
+                        ParameterType = ConfigurationParameterType.DateTime,
+                        ParameterValue = DateTime.Now.ToString()
+                    };
+                    _dbContext.Add(lastRefreshParam);
+                }
+                else
+                {
+                    lastRefreshParam.ParameterValue = DateTime.Now.ToString();
+                }
+            }
+            var lastRefreshPeriod = TimeSpan.FromTicks(DateTime.Now.Ticks - DateTime.Parse(lastRefreshParam.ParameterValue).Ticks);
+
+            if (lastRefreshPeriod.TotalHours >= 6)
+            {
+                await _client.LoadAllChats();
+                lastRefreshParam.ParameterValue = DateTime.Now.ToString();
             }
 
             //List<Task> tasks = [Task.Run(() => HandleChannelUpdates(cancellationToken), CancellationToken.None),
@@ -75,6 +96,7 @@ namespace TGClientDownloadWorkerService.Services
             HandleChannelUpdates(cancellationToken);
             HandleDownloadInError(cancellationToken);
 
+            _dbContext.SaveChanges();
             _configParameterService = null;
         }
 
