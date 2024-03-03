@@ -33,6 +33,7 @@ namespace TGClientDownloadDAL.Entities
         SysReserved = 0,
         ToConfirm,
         Active,
-        Obsolete
+        Obsolete,
+        AccessHashToVerify
     }
 }

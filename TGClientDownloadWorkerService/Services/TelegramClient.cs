@@ -22,6 +22,8 @@ namespace TGClientDownloadWorkerService.Services
         private readonly bool _isDev;
 
         private ConcurrentQueue<ChannelFileUpdate> _channelFileUpdates;
+        private List<ChatBase> _allChats = [];
+
         StreamWriter WTelegramLogs;
 
 
@@ -58,6 +60,7 @@ namespace TGClientDownloadWorkerService.Services
             Disconnect();
             _serviceScope.Dispose();
         }
+
         private string? ClientConfig(string what)
         {
             switch (what)
@@ -73,6 +76,7 @@ namespace TGClientDownloadWorkerService.Services
                 default: return null;                  // let WTelegramClient decide the default config
             }
         }
+
         public CancellationToken? CancellationToken
         {
             get
@@ -146,6 +150,17 @@ namespace TGClientDownloadWorkerService.Services
 
         #region Methods
 
+        public async Task LoadAllChats()
+        {
+            var chats = await _tgClient.Messages_GetAllChats();
+            _allChats = chats.chats.Values.ToList();
+        }
+
+        public ChatBase? GetCachedChatById(long chatId)
+        {
+            return _allChats?.FirstOrDefault(c => c.ID == chatId);
+        }
+
         private static void ProgressCallback(long transmitted, long totalSize, int id, CancellationToken? cancellationToken, ILogger log)
         {
             if (cancellationToken.HasValue && cancellationToken.Value.IsCancellationRequested)
@@ -167,7 +182,14 @@ namespace TGClientDownloadWorkerService.Services
             int time = Random.Shared.Next(2000, 10000);
             await Task.Delay(time);
 
-            await _tgClient.Channels_ReadHistory(new InputChannel(channel.id, channel.access_hash), messageId);
+            try
+            {
+                await _tgClient.Channels_ReadHistory(new InputChannel(channel.id, channel.access_hash), messageId);
+            }
+            catch (RpcException ex)
+            {
+                _log.Error("An error occured on ReadChannelHistory", ex);
+            }
         }
 
         /// <summary>
@@ -240,29 +262,34 @@ namespace TGClientDownloadWorkerService.Services
             Dictionary<long, ChatBase> chats = [];
             updates.CollectUsersChats(users, chats);
 
-            //I have no idea if they are actually needed, but since they were in the examples, i'll keep this if-else
-            if (updates is UpdateShortMessage usm && !users.ContainsKey(usm.user_id))
-            {
-                (await _tgClient.Updates_GetDifference(usm.pts - usm.pts_count, usm.date, 0)).CollectUsersChats(users, chats);
-            }
-            else if (updates is UpdateShortChatMessage uscm && (!users.ContainsKey(uscm.from_id) || !chats.ContainsKey(uscm.chat_id)))
-            {
-                (await _tgClient.Updates_GetDifference(uscm.pts - uscm.pts_count, uscm.date, 0)).CollectUsersChats(users, chats);
-            }
-
             foreach (var update in updates.UpdateList)
             {
                 switch (update)
                 {
                     case UpdateNewChannelMessage ncm:
                         chats.TryGetValue(ncm.message.Peer.ID, out var chat);
-
+                        //(ncm.message.Peer as PeerChannel).channel_id
+                        //chats.Values.Where(x=>x.ID )
                         var message = ((Message)ncm.message);
                         Channel channel = (Channel)chat;
+                        if (channel.flags.HasFlag(Channel.Flags.min)) //I cannot trust channel with min flag, the access_hash may not be correct
+                        {
+                            _log.Info($"Channel {channel.Title}, id {channel.ID} received from the update has min flag. I'll try to get access_hash from cached chats");
+                            long? accessHash = (GetCachedChatById(channel.ID) as Channel)?.access_hash;
+                            if (accessHash is not null)
+                            {
+                                channel.access_hash = accessHash.Value;
+                            }
+                            else
+                            {
+                                _log.Info($"Channel {channel.Title}, id {channel.ID} not found in cached chats. I'll try to mark as read, but it will probably fail");
+                            }
+                        }
 
                         var channelUpdate = new ChannelFileUpdate();
                         channelUpdate.Channel = channel;
                         channelUpdate.Message = message;
+                        channelUpdate.SusChannel = channel.flags.HasFlag(Channel.Flags.min);
 
                         ReadChannelHistory(channel, message.ID);
 
@@ -286,7 +313,7 @@ namespace TGClientDownloadWorkerService.Services
                     //case UpdateUserName uun: Console.WriteLine($"{User(uun.user_id)} has changed profile name: {uun.first_name} {uun.last_name}"); break;
                     //case UpdateUser uu: Console.WriteLine($"{User(uu.user_id)} has changed infos/photo"); break;
                     default:
-                        Console.WriteLine(update.GetType().Name);
+                        //Console.WriteLine(update.GetType().Name);
                         _log.Debug($"Unmanaged update received: {update.GetType().Name}");
                         break; // there are much more update types than the above example cases
                 }
@@ -329,5 +356,6 @@ namespace TGClientDownloadWorkerService.Services
     {
         public Channel Channel { get; set; }
         public Message Message { get; set; }
+        public bool SusChannel { get; set; }
     }
 }

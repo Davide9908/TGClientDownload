@@ -58,13 +58,14 @@ namespace TGClientDownloadWorkerService.Services
                     return;
                 }
                 _loginConnectionAttemps = 1;
-                return; //I will start doing stuff at the next run
+                //return; //I will start doing stuff at the next run
             }
 
             if (_startupRetrieve)
             {
                 _startupRetrieve = false;
                 await RetrieveFailedOrIncompleteDownloads();
+                await _client.LoadAllChats();
             }
 
             //List<Task> tasks = [Task.Run(() => HandleChannelUpdates(cancellationToken), CancellationToken.None),
@@ -90,12 +91,31 @@ namespace TGClientDownloadWorkerService.Services
                 TelegramChannel? channelConfig = _dbContext.TelegramChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash).FirstOrDefault();
                 if (channelConfig is null)
                 {
+                    if (fileUpdate.SusChannel)//if the channel is one of the min ones, i will look only by id, maybe it exist with the wrong hash
+                    {
+                        channelConfig = _dbContext.TelegramChannels.FirstOrDefault(c => c.ChatId == channel.ID);
+                        if (channelConfig is null) //if it's still null it's a new one, but it's sus
+                        {
+                            _log.Warning($"Channel {channel} is new but came with min flag, therefore I cannot trust its access_hash ");
+                        }
+                        else //update access hash
+                        {
+                            _log.Info($"Updating Channel {channel} access_hash: old(wrong) one {channelConfig.AccessHash}, new one {channel.access_hash}");
+                            channelConfig.AccessHash = channel.access_hash;
+                            _dbContext.SaveChanges();
+                            goto ContinueDownload; //it's orrible but it's the easiest way
+                        }
+                    }
                     _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
                     TelegramChannel telegramChannel = new(channel.ID, channel.access_hash, channel.Title, null, false);
+                    telegramChannel.Status = fileUpdate.SusChannel ? ChannelStatus.AccessHashToVerify : ChannelStatus.ToConfirm;
                     _dbContext.TelegramChannels.Add(telegramChannel);
                     _dbContext.SaveChanges();
                     continue;
                 }
+
+            ContinueDownload:
+
                 if (!channelConfig.AutoDownloadEnabled || channelConfig.Status != ChannelStatus.Active)
                 {
                     _log.Warning($"Channel is not active or automatic downloads are disabled");
