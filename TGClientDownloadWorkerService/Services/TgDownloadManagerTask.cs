@@ -11,7 +11,7 @@ namespace TGClientDownloadWorkerService.Services
 {
     public partial class TgDownloadManagerTask : ScheduledTaskService
     {
-        private readonly TelegramClient _client;
+        private readonly TelegramClientService _client;
         private readonly ILogger<ScheduledTaskService> _log;
         private readonly IServiceProvider _serviceProvider;
         private int _loginConnectionAttemps = 1;
@@ -21,7 +21,7 @@ namespace TGClientDownloadWorkerService.Services
         private ConcurrentDictionary<int, Document> _inProgress; //the key is the messageId
         private ConcurrentDictionary<int, Document> _inError; //the key is the messageId
 
-        public TgDownloadManagerTask(ILogger<TgDownloadManagerTask> logger, IServiceProvider serviceProvider, TelegramClient client) : base(logger, serviceProvider)
+        public TgDownloadManagerTask(ILogger<TgDownloadManagerTask> logger, IServiceProvider serviceProvider, TelegramClientService client) : base(logger, serviceProvider)
         {
             _client = client;
             _log = logger;
@@ -110,12 +110,14 @@ namespace TGClientDownloadWorkerService.Services
                 if (!result) { continue; }
 
                 Channel channel = fileUpdate.Channel;
-                TelegramChannel? channelConfig = _dbContext.TelegramChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash).FirstOrDefault();
+                TelegramChannel? channelConfig = _dbContext.TelegramChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash)
+                                                                            .Include(c => c.AnimeEpisodesSetting)
+                                                                            .FirstOrDefault();
                 if (channelConfig is null)
                 {
                     if (fileUpdate.SusChannel)//if the channel is one of the min ones, i will look only by id, maybe it exist with the wrong hash
                     {
-                        channelConfig = _dbContext.TelegramChannels.FirstOrDefault(c => c.ChatId == channel.ID);
+                        channelConfig = _dbContext.TelegramChannels.Include(c => c.AnimeEpisodesSetting).FirstOrDefault(c => c.ChatId == channel.ID);
                         if (channelConfig is null) //if it's still null it's a new one, but it's sus
                         {
                             _log.Warning($"Channel {channel} is new but came with min flag, therefore I cannot trust its access_hash ");
@@ -129,7 +131,8 @@ namespace TGClientDownloadWorkerService.Services
                         }
                     }
                     _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
-                    TelegramChannel telegramChannel = new(channel.ID, channel.access_hash, channel.Title, null, false);
+                    TelegramChannel telegramChannel = new(channel.ID, channel.access_hash, channel.Title, false);
+                    telegramChannel.AnimeEpisodesSetting = new AnimeEpisodesSetting();
                     telegramChannel.Status = fileUpdate.SusChannel ? ChannelStatus.AccessHashToVerify : ChannelStatus.ToConfirm;
                     _dbContext.TelegramChannels.Add(telegramChannel);
                     _dbContext.SaveChanges();
@@ -178,9 +181,25 @@ namespace TGClientDownloadWorkerService.Services
                 {
                     _log.Warning("File extension could not be determined");
                 }
+                string filename;
+                if (channelConfig.AnimeEpisodesSetting is null || string.IsNullOrWhiteSpace(channelConfig.AnimeEpisodesSetting.FileNameTemplate))
+                {
+                    filename = doc.Filename ?? (doc.ID.ToString() + extension);
+                }
+                else
+                {
+                    filename = channelConfig.AnimeEpisodesSetting.FileNameTemplate + "_" + epNumber + extension;
+                }
 
-                string filename = channelConfig.FileNameTemplate + "_" + epNumber + extension;
-                string filePath = _configParameterService.GetValue(ParameterNames.DefaultDownloadLocation) + filename;
+                string? downloadFolder = _configParameterService.GetValue(ParameterNames.DefaultDownloadLocation);
+                if (downloadFolder is null)
+                {
+                    _log.Error("No default download folder found");
+                    continue;
+                }
+
+
+                string filePath = Path.Combine(downloadFolder, filename);
                 FileStream? fileStream;
                 try
                 {

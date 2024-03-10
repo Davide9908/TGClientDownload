@@ -36,8 +36,8 @@ namespace TGClientDownloadWorkerService.Extensions
         }
     }
 
-    public static class CustomExtension
+    public static class CustomExtensions
     {
-        public static bool HasElements<T>(this IEnumerable<T> myList) => myList != null && myList.Any();
+        public static bool HasElements<T>(this IEnumerable<T> myList) => myList is not null && myList.Any();
     }
 }

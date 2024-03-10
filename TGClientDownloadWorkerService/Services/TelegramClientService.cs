@@ -8,9 +8,9 @@ using WTelegram;
 
 namespace TGClientDownloadWorkerService.Services
 {
-    public class TelegramClient : IDisposable
+    public class TelegramClientService : IDisposable
     {
-        private readonly ILogger<TelegramClient> _log;
+        private readonly ILogger<TelegramClientService> _log;
         private readonly IServiceProvider _serviceProvider;
         private readonly IServiceScope _serviceScope;
         private readonly TGAuthenticationSettings _configuration;
@@ -27,7 +27,7 @@ namespace TGClientDownloadWorkerService.Services
         StreamWriter WTelegramLogs;
 
 
-        public TelegramClient(ILogger<TelegramClient> log, IServiceProvider serviceProvider, IConfiguration configuration)
+        public TelegramClientService(ILogger<TelegramClientService> log, IServiceProvider serviceProvider, IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
             _log = log;

@@ -51,6 +51,12 @@ namespace TGClientDownloadDAL
                 entity.HasKey(z => z.TelegramFileId);
                 entity.HasOne(p => p.TelegramMessage);
             });
+
+            modelBuilder.Entity<AnimeEpisodesSetting>(entity =>
+            {
+                entity.HasKey(z => z.TelegramChannelId);
+                entity.HasOne(p => p.TelegramChannel);
+            });
         }
 
         public void Migrate()
@@ -68,6 +74,8 @@ namespace TGClientDownloadDAL
         public virtual DbSet<TelegramMessage> TelegramMessages { get; set; }
         public virtual DbSet<ScheduledTask> ScheduledTasks { get; set; }
         public virtual DbSet<ConfigurationParameter> ConfigurationParameters { get; set; }
+        public virtual DbSet<AnimeEpisodesSetting> AnimeEpisodesSettings { get; set; }
+
 
     }
 }

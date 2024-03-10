@@ -38,5 +38,8 @@ namespace TGClientDownloadDAL.Entities
         public const string Password = nameof(Password);
         public const string WTelegramClientLogPath = nameof(WTelegramClientLogPath);
         public const string LastChatsRefresh = nameof(LastChatsRefresh);
+        public const string MALApiLink = nameof(MALApiLink);
+        public const string MALApiID = nameof(MALApiID);
+        public const string MALUsername = nameof(MALUsername);
     }
 }

@@ -36,7 +36,7 @@ namespace TGClientDownloadWorkerService.Services
                 int delay = 5000;
 
                 using (_serviceScope = _serviceProvider.CreateScope())
-                using (_dbContext = _serviceScope.ServiceProvider.GetService<TGDownDBContext>())
+                using (_dbContext = _serviceScope.ServiceProvider.GetRequiredService<TGDownDBContext>())
                 {
                     var thisTask = _dbContext.ScheduledTasks.FirstOrDefault(st => st.TasksName == GetType().Name);
                     if (thisTask is not null)
