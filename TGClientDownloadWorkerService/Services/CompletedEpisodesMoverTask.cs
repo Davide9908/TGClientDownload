@@ -69,8 +69,13 @@ namespace TGClientDownloadWorkerService.Services
 
             foreach (var filename in fileNames)
             {
+                if (!dbFiles.ContainsKey(filename))
+                {
+                    continue;
+                }
+
                 AnimeEpisodesSetting? setting = dbFiles.GetValueOrDefault(filename);
-                if (setting?.AnimeFolderPath is null || setting.MALAnimeId is null)
+                if (setting?.AnimeFolderPath is null || setting?.MALAnimeId is null)
                 {
                     _log.Warning("AnimeEpisodesSetting folder or MAL id are not configured");
                     continue;
