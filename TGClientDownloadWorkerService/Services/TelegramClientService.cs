@@ -24,7 +24,7 @@ namespace TGClientDownloadWorkerService.Services
         private ConcurrentQueue<ChannelFileUpdate> _channelFileUpdates;
         private List<ChatBase> _allChats = [];
 
-        StreamWriter WTelegramLogs;
+        private readonly StreamWriter WTelegramLogs;
 
 
         public TelegramClientService(ILogger<TelegramClientService> log, IServiceProvider serviceProvider, IConfiguration configuration)
@@ -159,6 +159,11 @@ namespace TGClientDownloadWorkerService.Services
         public ChatBase? GetCachedChatById(long chatId)
         {
             return _allChats?.FirstOrDefault(c => c.ID == chatId);
+        }
+
+        public async Task<MessageBase[]> GetChannelHistory(InputPeer channelPeer)
+        {
+            return (await _tgClient.Messages_GetHistory(channelPeer)).Messages;
         }
 
         private static void ProgressCallback(long transmitted, long totalSize, int id, CancellationToken? cancellationToken, ILogger log)

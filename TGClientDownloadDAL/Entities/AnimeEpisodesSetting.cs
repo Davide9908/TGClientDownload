@@ -15,5 +15,7 @@ namespace TGClientDownloadDAL.Entities
         public int? MALAnimeId { get; set; }
 
         public string? AnimeFolderPath { get; set; }
+
+        public bool DownloadLastEpisode { get; set; }
     }
 }

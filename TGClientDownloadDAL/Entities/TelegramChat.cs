@@ -18,5 +18,11 @@ namespace TGClientDownloadDAL.Entities
         public long AccessHash { get; set; }
 
         public List<TelegramMediaDocument> MediaDocuments { get; set; }
+
+
+        public override string ToString()
+        {
+            return string.Join(" - ", ChatId, AccessHash);
+        }
     }
 }

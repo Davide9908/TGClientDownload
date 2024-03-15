@@ -93,6 +93,8 @@ namespace TGClientDownloadWorkerService.Services
             //    Task.Run(() => HandleDownloadInError(cancellationToken), CancellationToken.None)];
 
             //await Task.WhenAll(tasks);
+
+            await HandleFirstDownload(cancellationToken);
             HandleChannelUpdates(cancellationToken);
             HandleDownloadInError(cancellationToken);
 
@@ -113,33 +115,10 @@ namespace TGClientDownloadWorkerService.Services
                 TelegramChannel? channelConfig = _dbContext.TelegramChannels.Where(c => c.ChatId == channel.ID && c.AccessHash == channel.access_hash)
                                                                             .Include(c => c.AnimeEpisodesSetting)
                                                                             .FirstOrDefault();
-                if (channelConfig is null)
+                if (channelConfig is null && ManagePossibleNewChannel(fileUpdate, ref channelConfig, channel))
                 {
-                    if (fileUpdate.SusChannel)//if the channel is one of the min ones, i will look only by id, maybe it exist with the wrong hash
-                    {
-                        channelConfig = _dbContext.TelegramChannels.Include(c => c.AnimeEpisodesSetting).FirstOrDefault(c => c.ChatId == channel.ID);
-                        if (channelConfig is null) //if it's still null it's a new one, but it's sus
-                        {
-                            _log.Warning($"Channel {channel} is new but came with min flag, therefore I cannot trust its access_hash ");
-                        }
-                        else //update access hash
-                        {
-                            _log.Info($"Updating Channel {channel} access_hash: old(wrong) one {channelConfig.AccessHash}, new one {channel.access_hash}");
-                            channelConfig.AccessHash = channel.access_hash;
-                            _dbContext.SaveChanges();
-                            goto ContinueDownload; //it's orrible but it's the easiest way
-                        }
-                    }
-                    _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
-                    TelegramChannel telegramChannel = new(channel.ID, channel.access_hash, channel.Title, false);
-                    telegramChannel.AnimeEpisodesSetting = new AnimeEpisodesSetting();
-                    telegramChannel.Status = fileUpdate.SusChannel ? ChannelStatus.AccessHashToVerify : ChannelStatus.ToConfirm;
-                    _dbContext.TelegramChannels.Add(telegramChannel);
-                    _dbContext.SaveChanges();
                     continue;
                 }
-
-            ContinueDownload:
 
                 if (!channelConfig.AutoDownloadEnabled || channelConfig.Status != ChannelStatus.Active)
                 {
@@ -188,7 +167,7 @@ namespace TGClientDownloadWorkerService.Services
                 }
                 else
                 {
-                    filename = channelConfig.AnimeEpisodesSetting.FileNameTemplate + "_" + epNumber + extension;
+                    filename = channelConfig.AnimeEpisodesSetting.FileNameTemplate + epNumber + extension;
                 }
 
                 string? downloadFolder = _configParameterService.GetValue(ParameterNames.DefaultDownloadLocation);
@@ -304,9 +283,79 @@ namespace TGClientDownloadWorkerService.Services
             _dbContext.SaveChanges();
         }
 
+        private async Task HandleFirstDownload(CancellationToken cancellationToken)
+        {
+            List<TelegramChannel> channelToDownload = _dbContext.TelegramChannels.Where(c => c.AnimeEpisodesSetting.DownloadLastEpisode).Include(c => c.AnimeEpisodesSetting).ToList();
+            bool multipleRequests = channelToDownload.Count > 3;
+            int count = 0;
+            foreach (TelegramChannel channel in channelToDownload)
+            {
+                var tgChannel = _client.GetCachedChatById(channel.ChatId);
+                if (tgChannel is null) { continue; }
+
+                var messagesBase = (await _client.GetChannelHistory(tgChannel.ToInputPeer()));
+                var messages = messagesBase.Where(m => m is Message).Select(m => (Message)m).ToList();
+
+                var lastVideo = messages.OrderByDescending(m => m.edit_date)
+                                        .FirstOrDefault(m => m.media is MessageMediaDocument);
+                if (lastVideo is null)
+                {
+                    _log.Info($"No episode found for channel {channel}");
+                    continue;
+                }
+
+                _client.GetChannelFileUpdatesQueue().Enqueue(new ChannelFileUpdate() { Channel = tgChannel as Channel, Message = lastVideo });
+                channel.AnimeEpisodesSetting.DownloadLastEpisode = false;
+                _dbContext.SaveChanges();
+
+                count++;
+                if (count > 3)
+                {
+                    await Task.Delay(2000, cancellationToken);
+                    count = 0;
+                }
+            }
+
+
+        }
         #endregion
 
         #region Util Methods
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileUpdate"></param>
+        /// <param name="telegramChannel"></param>
+        /// <param name="channel"></param>
+        /// <returns>true to skip to the next iteration</returns>
+        private bool ManagePossibleNewChannel(ChannelFileUpdate fileUpdate, ref TelegramChannel? telegramChannel, Channel channel)
+        {
+            if (fileUpdate.SusChannel)//if the channel is one of the min ones, i will look only by id, maybe it exist with the wrong hash
+            {
+                telegramChannel = _dbContext.TelegramChannels.Include(c => c.AnimeEpisodesSetting).FirstOrDefault(c => c.ChatId == channel.ID);
+                if (telegramChannel is null) //if it's still null it's a new one, but it's sus
+                {
+                    _log.Warning($"Channel {channel} is new but came with min flag, therefore I cannot trust its access_hash ");
+                }
+                else //update access hash
+                {
+                    _log.Info($"Updating Channel {channel} access_hash: old(wrong) one {telegramChannel.AccessHash}, new one {channel.access_hash}");
+                    telegramChannel.AccessHash = channel.access_hash;
+                    _dbContext.SaveChanges();
+                    return false;
+                }
+            }
+            _log.Warning($"Channel {channel} was not found in database, adding it to DB in order to confirm it");
+            telegramChannel = new(channel.ID, channel.access_hash, channel.Title, false)
+            {
+                AnimeEpisodesSetting = new AnimeEpisodesSetting(),
+                Status = fileUpdate.SusChannel ? ChannelStatus.AccessHashToVerify : ChannelStatus.ToConfirm
+            };
+            _dbContext.TelegramChannels.Add(telegramChannel);
+            _dbContext.SaveChanges();
+            return true;
+        }
 
         private async Task RetrieveFailedOrIncompleteDownloads()
         {
@@ -390,7 +439,7 @@ namespace TGClientDownloadWorkerService.Services
             _inProgress.TryAdd(dbMessage.MessageId, doc);
             string path = fileStream.Name;
             using (var tempScope = _serviceProvider.CreateScope())
-            using (var tempDBContext = tempScope.ServiceProvider.GetService<TGDownDBContext>())
+            using (var tempDBContext = tempScope.ServiceProvider.GetRequiredService<TGDownDBContext>())
             {
                 var tempDBMessage = tempDBContext.TelegramMessages.First(x => x.TelegramMessageId == dbMessage.TelegramMessageId);
                 var tempDBFile = tempDBContext.TelegramMediaDocuments.First(x => x.TelegramFileId == dbFile.TelegramFileId);

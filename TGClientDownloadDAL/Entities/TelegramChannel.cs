@@ -25,6 +25,11 @@ namespace TGClientDownloadDAL.Entities
             AutoDownloadEnabled = enableAutoDownload;
             Status = ChannelStatus.ToConfirm;
         }
+
+        public override string ToString()
+        {
+            return string.Join(" - ", base.ToString(), ChannelName);
+        }
     }
 
     public enum ChannelStatus
