@@ -80,8 +80,7 @@ namespace TGClientDownloadWorkerService.Services
                     _log.Warning("AnimeEpisodesSetting folder or MAL id are not configured");
                     continue;
                 }
-
-                string epNumberString = string.Join("", filename.Except(setting.FileNameTemplate)).Split(".").FirstOrDefault();
+                string epNumberString = filename.Replace(setting.FileNameTemplate, string.Empty).Split(".").FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(epNumberString))
                 {
                     _log.Error("Could not extract ep number from file name");
@@ -110,7 +109,7 @@ namespace TGClientDownloadWorkerService.Services
                 {
                     string fileWithPath = Path.Combine(downloadFolder, filename);
                     string destination = Path.Combine(setting.AnimeFolderPath, filename);
-                    File.Move(filename, destination);
+                    File.Move(fileWithPath, destination);
                 }
             }
 
