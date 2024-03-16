@@ -49,7 +49,7 @@ namespace TGClientDownloadWorkerService.Services
                 _log.Warning("MAL RestClient is null, probably parameter is missing");
                 return null;
             }
-            var username = _configParameterService.GetValue(ParameterNames.MALApiLink);
+            var username = _configParameterService.GetValue(ParameterNames.MALUsername);
             var apiId = _configParameterService.GetValue(ParameterNames.MALApiID);
             if (username is null || apiId is null)
             {
