@@ -150,6 +150,15 @@ namespace TGClientDownloadWorkerService.Services
 
         #region Methods
 
+        public Task SendMessageToChat(InputPeer peer, string message, bool markdown = false)
+        {
+            if (markdown)
+            {
+                var entities2 = _tgClient.MarkdownToEntities(ref message);
+                return _tgClient.SendMessageAsync(peer, message, entities: entities2);
+            }
+            return _tgClient.SendMessageAsync(peer, message);
+        }
         public async Task LoadAllChats()
         {
             var chats = await _tgClient.Messages_GetAllChats();

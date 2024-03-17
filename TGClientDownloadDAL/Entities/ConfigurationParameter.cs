@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TGClientDownloadDAL.SupportClasses;
 
 namespace TGClientDownloadDAL.Entities
 {
@@ -18,15 +19,6 @@ namespace TGClientDownloadDAL.Entities
         public ConfigurationParameterType ParameterType { get; set; }
     }
 
-    public enum ConfigurationParameterType
-    {
-        SysReserved = 0,
-        Int,
-        String,
-        Bool,
-        DateTime,
-        Decimal
-    }
 
     public static class ParameterNames
     {
@@ -41,5 +33,10 @@ namespace TGClientDownloadDAL.Entities
         public const string MALApiLink = nameof(MALApiLink);
         public const string MALApiID = nameof(MALApiID);
         public const string MALUsername = nameof(MALUsername);
+        public const string UPSIpAddress = nameof(UPSIpAddress);
+        public const string UPSName = nameof(UPSName);
+        public const string UPSStatusVariable = nameof(UPSStatusVariable);
+        public const string UPSAlarmUserId = nameof(UPSAlarmUserId);
+        public const string UPSAlarmUserHash = nameof(UPSAlarmUserHash);
     }
 }

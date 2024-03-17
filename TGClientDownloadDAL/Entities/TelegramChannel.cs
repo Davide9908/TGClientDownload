@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using TGClientDownloadDAL.SupportClasses;
 
 namespace TGClientDownloadDAL.Entities
 {
@@ -32,12 +33,5 @@ namespace TGClientDownloadDAL.Entities
         }
     }
 
-    public enum ChannelStatus
-    {
-        SysReserved = 0,
-        ToConfirm,
-        Active,
-        Obsolete,
-        AccessHashToVerify
-    }
+
 }
