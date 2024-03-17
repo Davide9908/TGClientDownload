@@ -10,7 +10,6 @@ namespace TGClientDownloadWorkerService.Services
         private readonly ILogger<UPSNetworkTask> _log;
         private readonly IServiceProvider _serviceProvider;
         private NUTClient? _nutClient;
-        private readonly ConfigParameterService _configuration;
         private readonly TelegramClientService _tgClient;
         private string _upsIpAddress;
         private string _upsName;
