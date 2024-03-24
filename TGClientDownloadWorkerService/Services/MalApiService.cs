@@ -59,6 +59,7 @@ namespace TGClientDownloadWorkerService.Services
 
             var request = new RestRequest($"users/{username}/animelist");
             request.AddHeader("X-MAL-CLIENT-ID", apiId);
+            request.AddParameter("limit", 1000);
             request.AddParameter("fields", "list_status");
             request.AddParameter("status", status);
             request.AddParameter("nsfw", includeNSFW);
