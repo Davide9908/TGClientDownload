@@ -10,8 +10,15 @@ namespace TGClientDownloadWorkerService.Services
         private readonly RestClient? _client;
         private readonly ConfigParameterService _configParameterService;
 
-        private static readonly string MAL_WATCHING = "watching";
-        private static readonly string MAL_COMPLETED = "completed";
+        private const string MAL_WATCHING = "watching";
+        private const string MAL_COMPLETED = "completed";
+        private const string PARAMETER_X_MAL_CLIENT_ID = "X-MAL-CLIENT-ID";
+        private const string PARAMETER_LIMIT = "limit";
+        private const int PARAMETER_LIMIT_VALUE = 1000;
+        private const string PARAMETER_FIELDS = "fields";
+        private const string PARAMETER_FIELDS_VALUE = "list_status";
+        private const string PARAMETER_STATUS = "status";
+        private const string PARAMETER_NSFW = "nsfw";
         public MalApiService(ILogger<MalApiService> logger, ConfigParameterService configParameterService)
         {
             _log = logger;
@@ -58,11 +65,11 @@ namespace TGClientDownloadWorkerService.Services
             }
 
             var request = new RestRequest($"users/{username}/animelist");
-            request.AddHeader("X-MAL-CLIENT-ID", apiId);
-            request.AddParameter("limit", 1000);
-            request.AddParameter("fields", "list_status");
-            request.AddParameter("status", status);
-            request.AddParameter("nsfw", includeNSFW);
+            request.AddHeader(PARAMETER_X_MAL_CLIENT_ID, apiId);
+            request.AddParameter(PARAMETER_LIMIT, PARAMETER_LIMIT_VALUE);
+            request.AddParameter(PARAMETER_FIELDS, PARAMETER_FIELDS_VALUE);
+            request.AddParameter(PARAMETER_STATUS, status);
+            request.AddParameter(PARAMETER_NSFW, includeNSFW);
 
             RestResponse<Root> restResponse = _client.ExecuteGet<Root>(request);
             //should not happen
