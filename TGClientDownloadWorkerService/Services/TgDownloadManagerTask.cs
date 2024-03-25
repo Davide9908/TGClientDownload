@@ -20,6 +20,7 @@ namespace TGClientDownloadWorkerService.Services
 
         private ConcurrentDictionary<int, Document> _inProgress; //the key is the messageId
         private ConcurrentDictionary<int, Document> _inError; //the key is the messageId
+        private ConcurrentDictionary<int, decimal> _downloadProgress;
 
         public TgDownloadManagerTask(ILogger<TgDownloadManagerTask> logger, IServiceProvider serviceProvider, TelegramClientService client) : base(logger, serviceProvider)
         {
@@ -37,6 +38,7 @@ namespace TGClientDownloadWorkerService.Services
             //_configParameterService = _serviceScope.ServiceProvider.GetRequiredService<ConfigParameterService>();
             _inError = new ConcurrentDictionary<int, Document>();
             _inProgress = new ConcurrentDictionary<int, Document>();
+            _downloadProgress = new ConcurrentDictionary<int, decimal>();
         }
 
         public async override Task Run(CancellationToken cancellationToken)
@@ -182,7 +184,7 @@ namespace TGClientDownloadWorkerService.Services
                 FileStream? fileStream;
                 try
                 {
-                    fileStream = File.Create(filePath);
+                    fileStream = File.Open(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
                 }
                 catch (Exception ex)
                 {
@@ -255,7 +257,7 @@ namespace TGClientDownloadWorkerService.Services
                 FileStream? fileStream;
                 try
                 {
-                    fileStream = File.Create(filePath);
+                    fileStream = File.Open(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
                 }
                 catch (Exception ex)
                 {
@@ -419,17 +421,23 @@ namespace TGClientDownloadWorkerService.Services
                 throw new OperationCanceledException("Download has been cancelled as per request", cancellationToken);
             }
 
-            //if (transmitted > 10000000) //just for test purpose
-            //{
-            //    throw new OperationCanceledException("Exception Test");
-            //}
-
             dbFile.DataTransmitted = transmitted;
             dbFile.LastUpdate = DateTime.UtcNow;
             tempDBContext.SaveChanges();
-
             decimal percentage = decimal.Divide(transmitted, totalSize) * 100;
-            _log.Info($"{percentage:F} - Downloading file {dbFile.FileName}: {transmitted}/{totalSize}");
+            bool found = _downloadProgress.TryGetValue(dbFile.TelegramMessageId, out decimal oldPercentage);
+            if (!found || (percentage - oldPercentage > Convert.ToDecimal(1.5)))
+            {
+                //_log.Info($"found={found} oldPercentage={oldPercentage:F} diff={percentage - oldPercentage} convert={Convert.ToDecimal(0.5)}");
+                _downloadProgress.AddOrUpdate(dbFile.TelegramMessageId, percentage, (key, old) => percentage);
+                _log.Info($"{percentage:F} - Downloading file {dbFile.FileName}: {transmitted}/{totalSize}");
+                return;
+            }
+            //if (percentage - oldPercentage < Convert.ToDecimal(0.5))
+            //{
+            //    _downloadProgress.AddOrUpdate(dbFile.TelegramMessageId, percentage, (key, old) => percentage);
+            //    _log.Info($"{percentage:F} - Downloading file {dbFile.FileName}: {transmitted}/{totalSize}");
+            //}
 
         }
 
