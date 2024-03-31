@@ -45,6 +45,7 @@ namespace TGClientDownloadWorkerService.Services
             _semaphoreDisconnect = new SemaphoreSlim(1);
             _token = null;
             _tgClient = new Client(ClientConfig);
+            _tgClient.MaxAutoReconnects = 0;
             _channelFileUpdates = new ConcurrentQueue<ChannelFileUpdate>();
         }
 
