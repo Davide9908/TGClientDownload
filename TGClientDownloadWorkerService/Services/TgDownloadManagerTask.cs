@@ -83,6 +83,12 @@ namespace TGClientDownloadWorkerService.Services
                     lastRefreshParam.ParameterValue = DateTime.Now.ToString();
                 }
             }
+            var refreshDBChannelParam = _configParameterService.GetConfigurationParameter(ParameterNames.RefreshDBChannels);
+            if (refreshDBChannelParam is not null && bool.Parse(refreshDBChannelParam.ParameterValue))
+            {
+                RefreshDBChannelFromCache();
+                refreshDBChannelParam.ParameterValue = false.ToString();
+            }
             var lastRefreshPeriod = TimeSpan.FromTicks(DateTime.Now.Ticks - DateTime.Parse(lastRefreshParam.ParameterValue).Ticks);
 
             if (lastRefreshPeriod.TotalHours >= 6)
@@ -531,6 +537,20 @@ namespace TGClientDownloadWorkerService.Services
         [GeneratedRegex(@"\..*", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "it-IT")]
         private static partial Regex FileExtensionRegex();
 
+        private void RefreshDBChannelFromCache()
+        {
+            var cachedChannels = _client.GetCachedChats().Where(c => c is Channel).Select(c => c as Channel).ToList();
+            var availableChannelIds = _dbContext.TelegramChannels.Select(c => c.ChatId).ToList();
+
+            var newChannels = cachedChannels.Where(c => !availableChannelIds.Contains(c.ID))
+                                            .Select(c => new TelegramChannel(c.ID, c.access_hash, c.Title, false))
+                                            .ToList();
+            if (newChannels.HasElements())
+            {
+                _dbContext.AddRange(newChannels);
+                _dbContext.SaveChanges();
+            }
+        }
         #endregion
     }
 }

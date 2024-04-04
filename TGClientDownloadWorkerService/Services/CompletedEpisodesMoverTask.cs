@@ -96,6 +96,10 @@ namespace TGClientDownloadWorkerService.Services
                     _log.Error("Could not parse episode number from file name", ex);
                     continue;
                 }
+                if (setting.CourEpisodeNumberGap.HasValue)
+                {
+                    epNumber -= setting.CourEpisodeNumberGap.Value;
+                }
                 //I look first on watching list. If it's not present, i look into the completed ones
                 var animeEntry = animeWatchingList.FirstOrDefault(l => l.node.id == setting.MALAnimeId)?.list_status;
                 animeEntry ??= animeCompletedList.FirstOrDefault(l => l.node.id == setting.MALAnimeId)?.list_status;

@@ -161,6 +161,7 @@ namespace TGClientDownloadWorkerService.Services
         {
             return _allChats?.FirstOrDefault(c => c.ID == chatId);
         }
+        public List<ChatBase> GetCachedChats() => _allChats;
 
         public async Task<MessageBase[]> GetChannelHistory(InputPeer channelPeer)
         {

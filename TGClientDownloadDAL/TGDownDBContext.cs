@@ -52,11 +52,11 @@ namespace TGClientDownloadDAL
                 entity.HasOne(p => p.TelegramMessage);
             });
 
-            modelBuilder.Entity<AnimeEpisodesSetting>(entity =>
-            {
-                entity.HasKey(z => z.TelegramChannelId);
-                entity.HasOne(p => p.TelegramChannel);
-            });
+            //modelBuilder.Entity<AnimeEpisodesSetting>(entity =>
+            //{
+            //    entity.HasKey(z => z.TelegramChannelId);
+            //    entity.HasOne(p => p.TelegramChannel);
+            //});
         }
 
         public void Migrate()
