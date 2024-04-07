@@ -304,7 +304,7 @@ namespace TGClientDownloadWorkerService.Services
                 var messagesBase = (await _client.GetChannelHistory(tgChannel.ToInputPeer()));
                 var messages = messagesBase.Where(m => m is Message).Select(m => (Message)m).ToList();
 
-                var lastVideo = messages.OrderByDescending(m => m.edit_date)
+                var lastVideo = messages.OrderByDescending(m => m.date)
                                         .FirstOrDefault(m => m.media is MessageMediaDocument);
                 if (lastVideo is null)
                 {
