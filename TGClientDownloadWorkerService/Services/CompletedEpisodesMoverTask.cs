@@ -106,7 +106,7 @@ namespace TGClientDownloadWorkerService.Services
                 //run the check again to see if i found it
                 if (animeEntry is null)
                 {
-                    _log.Warning("Anime not found in MAL");
+                    _log.Warning($"Anime with id {setting.MALAnimeId} not found in MAL");
                     continue;
                 }
                 if (animeEntry.num_episodes_watched >= epNumber)
