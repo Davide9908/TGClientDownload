@@ -175,6 +175,10 @@ namespace TGClientDownloadWorkerService.Services
                 }
                 else
                 {
+                    if (channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.HasValue)
+                    {
+                        epNumber = (int.Parse(epNumber) + channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.Value).ToString();
+                    }
                     filename = channelConfig.AnimeEpisodesSetting.FileNameTemplate + epNumber + extension;
                 }
 
