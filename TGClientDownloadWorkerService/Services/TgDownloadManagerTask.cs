@@ -175,7 +175,7 @@ namespace TGClientDownloadWorkerService.Services
                 }
                 else
                 {
-                    if (channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.HasValue)
+                    if (channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.HasValue && channelConfig.AnimeEpisodesSetting.UseGapForEpNum)
                     {
                         epNumber = (int.Parse(epNumber) + channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.Value).ToString();
                     }

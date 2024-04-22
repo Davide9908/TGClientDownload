@@ -20,5 +20,7 @@ namespace TGClientDownloadDAL.Entities
         public bool DownloadLastEpisode { get; set; }
 
         public short? CourEpisodeNumberGap { get; set; }
+
+        public bool UseGapForEpNum { get; set; }
     }
 }
