@@ -189,6 +189,13 @@ namespace TGClientDownloadWorkerService.Services
                     continue;
                 }
 
+                //If a file has been reuploaded or for whatever reason i get the update again, it will be skipped
+                TelegramMediaDocument? episode = _dbContext.TelegramMediaDocuments.Include(x => x.TelegramMessage).FirstOrDefault(x => x.FileId == doc.ID && x.AccessHash == doc.access_hash);
+
+                if (episode is not null)
+                {
+                    continue;
+                }
 
                 string filePath = Path.Combine(downloadFolder, filename);
                 FileStream? fileStream;
@@ -202,36 +209,26 @@ namespace TGClientDownloadWorkerService.Services
                     continue;
                 }
 
-                //If a file has been reuploaded, I will re-download it. I don't know if it is what I actually want, but for now let's keep it
-                TelegramMediaDocument? episode = _dbContext.TelegramMediaDocuments.Include(x => x.TelegramMessage).FirstOrDefault(x => x.FileId == doc.ID && x.AccessHash == doc.access_hash);
-                TelegramMessage telegramMessage;
 
-                if (episode is not null)
+                TelegramMessage telegramMessage = new TelegramMessage
                 {
-                    episode.DownloadStatus = DownloadStatus.Downloading;
-                    episode.LastUpdate = DateTime.UtcNow;
+                    MessageId = message.id
+                };
 
-                    telegramMessage = episode.TelegramMessage;
-                }
-                else
+                episode = new TelegramMediaDocument
                 {
-                    telegramMessage = new TelegramMessage();
-                    telegramMessage.MessageId = message.id;
+                    SourceChatId = channelConfig.TelegramChatId,
+                    FileName = filename,
+                    DownloadStatus = DownloadStatus.Downloading,
+                    Size = doc.size,
+                    FileId = doc.ID,
+                    AccessHash = doc.access_hash,
+                    TelegramMessage = telegramMessage
+                };
 
-                    episode = new TelegramMediaDocument
-                    {
-                        SourceChatId = channelConfig.TelegramChatId,
-                        FileName = filename,
-                        DownloadStatus = DownloadStatus.Downloading,
-                        Size = doc.size,
-                        FileId = doc.ID,
-                        AccessHash = doc.access_hash,
-                        TelegramMessage = telegramMessage
-                    };
+                _dbContext.TelegramMessages.Add(telegramMessage);
+                _dbContext.TelegramMediaDocuments.Add(episode);
 
-                    _dbContext.TelegramMessages.Add(telegramMessage);
-                    _dbContext.TelegramMediaDocuments.Add(episode);
-                }
 
                 _dbContext.SaveChanges();
 
