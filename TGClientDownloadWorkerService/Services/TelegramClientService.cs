@@ -400,33 +400,37 @@ namespace TGClientDownloadWorkerService.Services
         }
         private async Task Client_OnOther(IObject arg)
         {
-            if (arg is ReactorError err)
+            switch (arg)
             {
-                // typically: network connection was totally lost
-                _log.Error("Fatal reactor error", err.Exception);
-                while (true)
-                {
-                    _log.Error("Disposing the client and trying to reconnect in 5 seconds...");
-                    _tgClient.Dispose();
-                    await Task.Delay(5000);
-                    try
+                case ReactorError err:
+                    // typically: network connection was totally lost
+                    _log.Error("Fatal reactor error", err.Exception);
+                    while (true)
                     {
-                        _tgClient = new Client(ClientConfig);
-                        //_tgClient.OnUpdate += Client_OnUpdate;
-                        _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
-                        _tgClient.OnOther += Client_OnOther;
-                        await _tgClient.LoginUserIfNeeded();
-                        break;
+                        _log.Error("Disposing the client and trying to reconnect in 5 seconds...");
+                        _tgClient.Dispose();
+                        await Task.Delay(5000);
+                        try
+                        {
+                            _tgClient = new Client(ClientConfig);
+                            //_tgClient.OnUpdate += Client_OnUpdate;
+                            _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
+                            _tgClient.OnOther += Client_OnOther;
+                            await _tgClient.LoginUserIfNeeded();
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Error("Connection still failing", ex);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _log.Error("Connection still failing", ex);
-                    }
-                }
-            }
-            else
-            {
-                _log.Warning($"Client_OnOther: Other - {arg.GetType().Name}");
+
+                    break;
+                case Pong pong:
+                    break;
+                default:
+                    _log.Warning($"Client_OnOther: Other - {arg.GetType().Name}");
+                    break;
             }
         }
         #endregion
