@@ -95,7 +95,7 @@ namespace TGClientDownloadWorkerService.Services
             }
         }
 
-        public bool IsConnected => _tgClient.User is not null;
+        public bool IsConnected => _tgClient?.User is not null;
 
         public async Task<User?> Connect()
         {
@@ -112,6 +112,7 @@ namespace TGClientDownloadWorkerService.Services
             }
 
             _tgClient = new Client(ClientConfig);
+            _tgClient.MaxAutoReconnects = 0;
             _updateManager = _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
 
             //_tgClient.OnUpdates += Client_OnUpdate;
@@ -414,6 +415,7 @@ namespace TGClientDownloadWorkerService.Services
                         {
                             _tgClient = new Client(ClientConfig);
                             //_tgClient.OnUpdate += Client_OnUpdate;
+                            _tgClient.MaxAutoReconnects = 0;
                             _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
                             _tgClient.OnOther += Client_OnOther;
                             await _tgClient.LoginUserIfNeeded();
