@@ -413,12 +413,13 @@ namespace TGClientDownloadWorkerService.Services
                         await Task.Delay(5000);
                         try
                         {
-                            _tgClient = new Client(ClientConfig);
-                            //_tgClient.OnUpdate += Client_OnUpdate;
-                            _tgClient.MaxAutoReconnects = 0;
-                            _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
-                            _tgClient.OnOther += Client_OnOther;
-                            await _tgClient.LoginUserIfNeeded();
+                            await Connect();
+                            //_tgClient = new Client(ClientConfig);
+                            ////_tgClient.OnUpdate += Client_OnUpdate;
+                            //_tgClient.MaxAutoReconnects = 0;
+                            //_tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
+                            //_tgClient.OnOther += Client_OnOther;
+                            //await _tgClient.LoginUserIfNeeded();
                             break;
                         }
                         catch (Exception ex)
