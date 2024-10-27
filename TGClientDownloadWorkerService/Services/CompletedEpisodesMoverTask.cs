@@ -80,6 +80,11 @@ namespace TGClientDownloadWorkerService.Services
                     _log.Warning("AnimeEpisodesSetting folder or MAL id are not configured");
                     continue;
                 }
+                if (string.IsNullOrWhiteSpace(setting.FileNameTemplate))
+                {
+                    _log.Warning("Filename template not configured, skipping...");
+                    continue;
+                }
                 string epNumberString = filename.Replace(setting.FileNameTemplate, string.Empty).Split(".").FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(epNumberString))
                 {

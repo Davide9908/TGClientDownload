@@ -72,7 +72,7 @@ namespace TGClientDownloadWorkerService.Services
                 case "api_hash": return _configuration.ApiHash;
                 case "session_pathname": return _isDev ? "G:\\Projects\\TGClientDownload\\TGClientDownload\\bin\\WTelegram.session" : _configuration.SessionPath;
                 case "phone_number": return _configuration.PhoneNumber;
-                //case "verification_code": Console.Write("Code: "); return Console.ReadLine();
+                case "verification_code": Console.Write("Code: "); return Console.ReadLine();
                 //case "first_name": return "John";      // if sign-up is required
                 //case "last_name": return "Doe";        // if sign-up is required
                 case "password": return _configuration.Password;     // if user has enabled 2FA
@@ -97,28 +97,30 @@ namespace TGClientDownloadWorkerService.Services
 
         public bool IsConnected => _tgClient?.User is not null;
 
-        public async Task<User?> Connect()
+        public async Task<User?> Connect(bool throwIfError = false, bool dispose = true)
         {
             User? loggedUser = null;
             //Evito che piu task possano effettuare il login
-            await _semaphoreConnect.WaitAsync();
-            if (IsConnected)
-            {
-                return _tgClient.User;
-            }
-            else
-            {
-                _tgClient.Dispose();
-            }
-
-            _tgClient = new Client(ClientConfig);
-            _tgClient.MaxAutoReconnects = 0;
-            _updateManager = _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
-
-            //_tgClient.OnUpdates += Client_OnUpdate;
-            _tgClient.OnOther += Client_OnOther;
             try
             {
+                await _semaphoreConnect.WaitAsync();
+                if (IsConnected)
+                {
+                    return _tgClient.User;
+                }
+                else if (dispose)
+                {
+                    _tgClient?.Dispose();
+                }
+
+                _tgClient = new Client(ClientConfig);
+                _tgClient.MaxAutoReconnects = 0;
+                _updateManager = _tgClient.WithUpdateManager(Client_OnUpdate, UPDATE_FILE);
+
+                //_tgClient.OnUpdates += Client_OnUpdate;
+                _tgClient.OnOther += Client_OnOther;
+
+                await _tgClient.ConnectAsync();
                 loggedUser = await _tgClient.LoginUserIfNeeded();
 
                 var dialogs = await _tgClient.Messages_GetAllDialogs(); // dialogs = groups/channels/users
@@ -126,6 +128,7 @@ namespace TGClientDownloadWorkerService.Services
             }
             catch (Exception ex)
             {
+                if (throwIfError) { throw; }
                 _log.Info("Unable to login or connect to Telegram", ex);
             }
             finally
@@ -409,11 +412,15 @@ namespace TGClientDownloadWorkerService.Services
                     while (true)
                     {
                         _log.Error("Disposing the client and trying to reconnect in 5 seconds...");
+                        _updateManager.SaveState(UPDATE_FILE);
+                        _updateManager = null;
                         _tgClient.Dispose();
+                        _tgClient = null;
                         await Task.Delay(5000);
                         try
                         {
-                            await Connect();
+                            var user = await Connect(true, false);
+                            _log.Info($"connected with user {user?.ID} - {user?.MainUsername}");
                             //_tgClient = new Client(ClientConfig);
                             ////_tgClient.OnUpdate += Client_OnUpdate;
                             //_tgClient.MaxAutoReconnects = 0;
