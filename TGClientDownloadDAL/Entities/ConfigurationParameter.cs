@@ -33,6 +33,7 @@ namespace TGClientDownloadDAL.Entities
         public const string MALApiLink = nameof(MALApiLink);
         public const string MALApiID = nameof(MALApiID);
         public const string MALUsername = nameof(MALUsername);
+        public const string RefreshDBChannels = nameof(RefreshDBChannels);
         public const string UPSIpAddress = nameof(UPSIpAddress);
         public const string UPSName = nameof(UPSName);
         public const string UPSStatusVariable = nameof(UPSStatusVariable);

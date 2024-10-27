@@ -80,6 +80,11 @@ namespace TGClientDownloadWorkerService.Services
                     _log.Warning("AnimeEpisodesSetting folder or MAL id are not configured");
                     continue;
                 }
+                if (string.IsNullOrWhiteSpace(setting.FileNameTemplate))
+                {
+                    _log.Warning("Filename template not configured, skipping...");
+                    continue;
+                }
                 string epNumberString = filename.Replace(setting.FileNameTemplate, string.Empty).Split(".").FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(epNumberString))
                 {
@@ -96,13 +101,17 @@ namespace TGClientDownloadWorkerService.Services
                     _log.Error("Could not parse episode number from file name", ex);
                     continue;
                 }
+                if (setting.CourEpisodeNumberGap.HasValue)
+                {
+                    epNumber -= setting.CourEpisodeNumberGap.Value;
+                }
                 //I look first on watching list. If it's not present, i look into the completed ones
                 var animeEntry = animeWatchingList.FirstOrDefault(l => l.node.id == setting.MALAnimeId)?.list_status;
                 animeEntry ??= animeCompletedList.FirstOrDefault(l => l.node.id == setting.MALAnimeId)?.list_status;
                 //run the check again to see if i found it
                 if (animeEntry is null)
                 {
-                    _log.Warning("Anime not found in MAL");
+                    _log.Warning($"Anime with id {setting.MALAnimeId} not found in MAL");
                     continue;
                 }
                 if (animeEntry.num_episodes_watched >= epNumber)

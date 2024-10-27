@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TGClientDownloadDAL;
@@ -11,13 +12,15 @@ using TGClientDownloadDAL;
 namespace TGClientDownloadDAL.Migrations
 {
     [DbContext(typeof(TGDownDBContext))]
-    partial class TGDownDBContextModelSnapshot : ModelSnapshot
+    [Migration("20240404175556_MALAnimeIdNotGenerated")]
+    partial class MALAnimeIdNotGenerated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.3")
+                .HasAnnotation("ProductVersion", "8.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -41,9 +44,6 @@ namespace TGClientDownloadDAL.Migrations
 
                     b.Property<int>("TelegramChannelId")
                         .HasColumnType("integer");
-
-                    b.Property<bool>("UseGapForEpNum")
-                        .HasColumnType("boolean");
 
                     b.HasKey("MALAnimeId");
 

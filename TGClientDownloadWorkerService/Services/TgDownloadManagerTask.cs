@@ -67,29 +67,35 @@ namespace TGClientDownloadWorkerService.Services
             {
                 _startupRetrieve = false;
                 await RetrieveFailedOrIncompleteDownloads();
-                await _client.LoadAllChats();
-                if (lastRefreshParam is null)
-                {
-                    lastRefreshParam = new ConfigurationParameter()
-                    {
-                        ParameterName = ParameterNames.LastChatsRefresh,
-                        ParameterType = ConfigurationParameterType.DateTime,
-                        ParameterValue = DateTime.Now.ToString()
-                    };
-                    _dbContext.Add(lastRefreshParam);
-                }
-                else
-                {
-                    lastRefreshParam.ParameterValue = DateTime.Now.ToString();
-                }
+                //await _client.LoadAllChats();
+                //if (lastRefreshParam is null)
+                //{
+                //    lastRefreshParam = new ConfigurationParameter()
+                //    {
+                //        ParameterName = ParameterNames.LastChatsRefresh,
+                //        ParameterType = ConfigurationParameterType.DateTime,
+                //        ParameterValue = DateTime.Now.ToString()
+                //    };
+                //    _dbContext.Add(lastRefreshParam);
+                //}
+                //else
+                //{
+                //    lastRefreshParam.ParameterValue = DateTime.Now.ToString();
+                //}
             }
-            var lastRefreshPeriod = TimeSpan.FromTicks(DateTime.Now.Ticks - DateTime.Parse(lastRefreshParam.ParameterValue).Ticks);
-
-            if (lastRefreshPeriod.TotalHours >= 6)
+            var refreshDBChannelParam = _configParameterService.GetConfigurationParameter(ParameterNames.RefreshDBChannels);
+            if (refreshDBChannelParam is not null && bool.Parse(refreshDBChannelParam.ParameterValue))
             {
-                await _client.LoadAllChats();
-                lastRefreshParam.ParameterValue = DateTime.Now.ToString();
+                RefreshDBChannelFromCache();
+                refreshDBChannelParam.ParameterValue = false.ToString();
             }
+            //var lastRefreshPeriod = TimeSpan.FromTicks(DateTime.Now.Ticks - DateTime.Parse(lastRefreshParam.ParameterValue).Ticks);
+
+            //if (lastRefreshPeriod.TotalHours >= 6)
+            //{
+            //    await _client.LoadAllChats();
+            //    lastRefreshParam.ParameterValue = DateTime.Now.ToString();
+            //}
 
             //List<Task> tasks = [Task.Run(() => HandleChannelUpdates(cancellationToken), CancellationToken.None),
             //    Task.Run(() => HandleDownloadInError(cancellationToken), CancellationToken.None)];
@@ -169,6 +175,10 @@ namespace TGClientDownloadWorkerService.Services
                 }
                 else
                 {
+                    if (channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.HasValue && channelConfig.AnimeEpisodesSetting.UseGapForEpNum)
+                    {
+                        epNumber = (int.Parse(epNumber) + channelConfig.AnimeEpisodesSetting.CourEpisodeNumberGap.Value).ToString();
+                    }
                     filename = channelConfig.AnimeEpisodesSetting.FileNameTemplate + epNumber + extension;
                 }
 
@@ -179,6 +189,13 @@ namespace TGClientDownloadWorkerService.Services
                     continue;
                 }
 
+                //If a file has been reuploaded or for whatever reason i get the update again, it will be skipped
+                TelegramMediaDocument? episode = _dbContext.TelegramMediaDocuments.Include(x => x.TelegramMessage).FirstOrDefault(x => x.FileId == doc.ID && x.AccessHash == doc.access_hash);
+
+                if (episode is not null)
+                {
+                    continue;
+                }
 
                 string filePath = Path.Combine(downloadFolder, filename);
                 FileStream? fileStream;
@@ -192,36 +209,26 @@ namespace TGClientDownloadWorkerService.Services
                     continue;
                 }
 
-                //If a file has been reuploaded, I will re-download it. I don't know if it is what I actually want, but for now let's keep it
-                TelegramMediaDocument? episode = _dbContext.TelegramMediaDocuments.Include(x => x.TelegramMessage).FirstOrDefault(x => x.FileId == doc.ID && x.AccessHash == doc.access_hash);
-                TelegramMessage telegramMessage;
 
-                if (episode is not null)
+                TelegramMessage telegramMessage = new TelegramMessage
                 {
-                    episode.DownloadStatus = DownloadStatus.Downloading;
-                    episode.LastUpdate = DateTime.UtcNow;
+                    MessageId = message.id
+                };
 
-                    telegramMessage = episode.TelegramMessage;
-                }
-                else
+                episode = new TelegramMediaDocument
                 {
-                    telegramMessage = new TelegramMessage();
-                    telegramMessage.MessageId = message.id;
+                    SourceChatId = channelConfig.TelegramChatId,
+                    FileName = filename,
+                    DownloadStatus = DownloadStatus.Downloading,
+                    Size = doc.size,
+                    FileId = doc.ID,
+                    AccessHash = doc.access_hash,
+                    TelegramMessage = telegramMessage
+                };
 
-                    episode = new TelegramMediaDocument
-                    {
-                        SourceChatId = channelConfig.TelegramChatId,
-                        FileName = filename,
-                        DownloadStatus = DownloadStatus.Downloading,
-                        Size = doc.size,
-                        FileId = doc.ID,
-                        AccessHash = doc.access_hash,
-                        TelegramMessage = telegramMessage
-                    };
+                _dbContext.TelegramMessages.Add(telegramMessage);
+                _dbContext.TelegramMediaDocuments.Add(episode);
 
-                    _dbContext.TelegramMessages.Add(telegramMessage);
-                    _dbContext.TelegramMediaDocuments.Add(episode);
-                }
 
                 _dbContext.SaveChanges();
 
@@ -298,7 +305,7 @@ namespace TGClientDownloadWorkerService.Services
                 var messagesBase = (await _client.GetChannelHistory(tgChannel.ToInputPeer()));
                 var messages = messagesBase.Where(m => m is Message).Select(m => (Message)m).ToList();
 
-                var lastVideo = messages.OrderByDescending(m => m.edit_date)
+                var lastVideo = messages.OrderByDescending(m => m.date)
                                         .FirstOrDefault(m => m.media is MessageMediaDocument);
                 if (lastVideo is null)
                 {
@@ -306,7 +313,7 @@ namespace TGClientDownloadWorkerService.Services
                     continue;
                 }
 
-                _client.GetChannelFileUpdatesQueue().Enqueue(new ChannelFileUpdate() { Channel = tgChannel as Channel, Message = lastVideo });
+                _client.GetChannelFileUpdatesQueue().Enqueue(new ChannelFileUpdate(tgChannel as Channel, lastVideo, false));
                 channel.AnimeEpisodesSetting.DownloadLastEpisode = false;
                 _dbContext.SaveChanges();
 
@@ -531,6 +538,20 @@ namespace TGClientDownloadWorkerService.Services
         [GeneratedRegex(@"\..*", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "it-IT")]
         private static partial Regex FileExtensionRegex();
 
+        private void RefreshDBChannelFromCache()
+        {
+            var cachedChannels = _client.GetCachedChats().Where(c => c is Channel).Select(c => c as Channel).ToList();
+            var availableChannelIds = _dbContext.TelegramChannels.Select(c => c.ChatId).ToList();
+
+            var newChannels = cachedChannels.Where(c => !availableChannelIds.Contains(c.ID))
+                                            .Select(c => new TelegramChannel(c.ID, c.access_hash, c.Title, false))
+                                            .ToList();
+            if (newChannels.HasElements())
+            {
+                _dbContext.AddRange(newChannels);
+                _dbContext.SaveChanges();
+            }
+        }
         #endregion
     }
 }
