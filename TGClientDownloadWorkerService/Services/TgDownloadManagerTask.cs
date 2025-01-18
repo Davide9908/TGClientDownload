@@ -161,7 +161,7 @@ namespace TGClientDownloadWorkerService.Services
                 }
                 else
                 {
-                    extension = FileExtensionRegex().Match(doc.Filename).Value;
+                    extension = "." + FileExtensionRegex().Match(doc.Filename).Value;
                 }
 
                 if (extension is null)
@@ -535,7 +535,7 @@ namespace TGClientDownloadWorkerService.Services
         [GeneratedRegex(@"#ep[0-9]{1,3}", RegexOptions.IgnoreCase, "it-IT")]
         private static partial Regex EpRegex();
 
-        [GeneratedRegex(@"\..*", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "it-IT")]
+        [GeneratedRegex(@"[^.]+$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "it-IT")]
         private static partial Regex FileExtensionRegex();
 
         private void RefreshDBChannelFromCache()
